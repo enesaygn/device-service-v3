@@ -1,0 +1,2215 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Enterprise Device Management Service for POS systems, printers, and payment terminals",
+        "title": "Device Service API",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "Device Service API Support",
+            "email": "support@deviceservice.com"
+        },
+        "license": {
+            "name": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
+        },
+        "version": "1.0.0"
+    },
+    "host": "localhost:8084",
+    "basePath": "/api/v1",
+    "paths": {
+        "/devices": {
+            "get": {
+                "description": "Get list of devices with filtering and pagination support",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Devices"
+                ],
+                "summary": "List devices",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "per_page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by branch ID",
+                        "name": "branch_id",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "POS",
+                            "PRINTER",
+                            "SCANNER",
+                            "CASH_REGISTER",
+                            "CASH_DRAWER",
+                            "DISPLAY"
+                        ],
+                        "type": "string",
+                        "description": "Filter by device type",
+                        "name": "device_type",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "EPSON",
+                            "STAR",
+                            "INGENICO",
+                            "PAX",
+                            "CITIZEN",
+                            "BIXOLON",
+                            "VERIFONE",
+                            "GENERIC"
+                        ],
+                        "type": "string",
+                        "description": "Filter by brand",
+                        "name": "brand",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "ONLINE",
+                            "OFFLINE",
+                            "ERROR",
+                            "MAINTENANCE",
+                            "CONNECTING"
+                        ],
+                        "type": "string",
+                        "description": "Filter by status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by location",
+                        "name": "location",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "created_at",
+                        "description": "Sort by field",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "default": "desc",
+                        "description": "Sort order",
+                        "name": "sort_order",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Devices retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "devices": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/definitions/model.Device"
+                                                    }
+                                                },
+                                                "pagination": {
+                                                    "$ref": "#/definitions/service.PaginationResult"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Register a new device in the system with configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Devices"
+                ],
+                "summary": "Register a new device",
+                "parameters": [
+                    {
+                        "description": "Device registration request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/service.RegisterDeviceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Device registered successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.Device"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/devices/{device_id}/display": {
+            "post": {
+                "description": "Display text on customer display",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Operations"
+                ],
+                "summary": "Display text",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Device ID",
+                        "name": "device_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Display request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.DisplayRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Display operation completed",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/service.OperationResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Display operation failed",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/devices/{device_id}/open-drawer": {
+            "post": {
+                "description": "Open cash drawer on a device",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Operations"
+                ],
+                "summary": "Open cash drawer",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Device ID",
+                        "name": "device_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Drawer opened successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/service.OperationResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid device ID",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Drawer operation failed",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/devices/{device_id}/payment": {
+            "post": {
+                "description": "Execute a payment operation on a device",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Operations"
+                ],
+                "summary": "Payment operation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Device ID",
+                        "name": "device_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Payment request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.PaymentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Payment operation completed",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/service.OperationResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Payment operation failed",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/devices/{device_id}/print": {
+            "post": {
+                "description": "Execute a print operation on a device",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Operations"
+                ],
+                "summary": "Print operation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Device ID",
+                        "name": "device_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Print request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.PrintRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Print operation completed",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/service.OperationResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Print operation failed",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/devices/{device_id}/scan": {
+            "post": {
+                "description": "Execute a scan operation on a device",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Operations"
+                ],
+                "summary": "Scan operation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Device ID",
+                        "name": "device_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Scan request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.ScanRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Scan operation completed",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/service.OperationResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Scan operation failed",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/devices/{id}": {
+            "get": {
+                "description": "Get device details and current status by device ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Devices"
+                ],
+                "summary": "Get device details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Device ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Device retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.Device"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid device ID",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Device not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/devices/{id}/config": {
+            "put": {
+                "description": "Update device configuration settings",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Devices"
+                ],
+                "summary": "Update device configuration",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Device ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Configuration update request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.UpdateConfigRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Device configuration updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Update failed",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/devices/{id}/connect": {
+            "post": {
+                "description": "Establish connection to a device",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Devices"
+                ],
+                "summary": "Connect to device",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Device ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Device connected successfully",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid device ID",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Connection failed",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/devices/{id}/disconnect": {
+            "post": {
+                "description": "Disconnect from a device",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Devices"
+                ],
+                "summary": "Disconnect from device",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Device ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Device disconnected successfully",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid device ID",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Disconnection failed",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/devices/{id}/health": {
+            "get": {
+                "description": "Get current health metrics and status of a device",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Devices"
+                ],
+                "summary": "Get device health",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Device ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Device health retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/service.DeviceHealth"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid device ID",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to get device health",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/devices/{id}/test": {
+            "post": {
+                "description": "Test connection and basic functionality of a device",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Devices"
+                ],
+                "summary": "Test device connectivity",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Device ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Device test completed",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/service.TestResult"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid device ID",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Test failed",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/discovery/auto-setup": {
+            "post": {
+                "description": "Automatically register and setup discovered devices",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Discovery"
+                ],
+                "summary": "Auto-setup devices",
+                "parameters": [
+                    {
+                        "description": "Auto-setup request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.AutoSetupRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Auto-setup completed",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/service.AutoSetupResult"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Auto-setup failed",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/discovery/capabilities/{brand}/{type}": {
+            "get": {
+                "description": "Get capabilities for a specific brand and device type",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Discovery"
+                ],
+                "summary": "Get device capabilities",
+                "parameters": [
+                    {
+                        "enum": [
+                            "EPSON",
+                            "STAR",
+                            "INGENICO",
+                            "PAX",
+                            "CITIZEN",
+                            "BIXOLON",
+                            "VERIFONE",
+                            "GENERIC"
+                        ],
+                        "type": "string",
+                        "description": "Device brand",
+                        "name": "brand",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "POS",
+                            "PRINTER",
+                            "SCANNER",
+                            "CASH_REGISTER",
+                            "CASH_DRAWER",
+                            "DISPLAY"
+                        ],
+                        "type": "string",
+                        "description": "Device type",
+                        "name": "type",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Capabilities retrieved",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "brand": {
+                                                    "type": "string"
+                                                },
+                                                "capabilities": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "device_type": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Device not supported",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/discovery/scan": {
+            "get": {
+                "description": "Scan for available devices on serial, USB, TCP, or Bluetooth connections",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Discovery"
+                ],
+                "summary": "Scan for devices",
+                "parameters": [
+                    {
+                        "enum": [
+                            "all",
+                            "serial",
+                            "usb",
+                            "tcp",
+                            "bluetooth"
+                        ],
+                        "type": "string",
+                        "default": "all",
+                        "description": "Scan type",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "30s",
+                        "description": "Scan timeout",
+                        "name": "timeout",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Device scan completed",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "devices": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/definitions/service.DiscoveredDevice"
+                                                    }
+                                                },
+                                                "devices_found": {
+                                                    "type": "integer"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Scan failed",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/discovery/supported": {
+            "get": {
+                "description": "Get list of all supported device brands and models",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Discovery"
+                ],
+                "summary": "Get supported devices",
+                "responses": {
+                    "200": {
+                        "description": "Supported devices retrieved",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/service.SupportedDevicesResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "description": "Get overall service health status including database connectivity",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Health"
+                ],
+                "summary": "Health check",
+                "responses": {
+                    "200": {
+                        "description": "Service is healthy",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HealthResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Service is unhealthy",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HealthResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/health/db": {
+            "get": {
+                "description": "Check database connectivity and performance",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Health"
+                ],
+                "summary": "Database health check",
+                "responses": {
+                    "200": {
+                        "description": "Database is healthy",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Database is unhealthy",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/live": {
+            "get": {
+                "description": "Check if service is alive",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Health"
+                ],
+                "summary": "Liveness check",
+                "responses": {
+                    "200": {
+                        "description": "Service is alive",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "string"
+                                },
+                                "timestamp": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/operations": {
+            "get": {
+                "description": "Get list of operations with filtering and pagination",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Operations"
+                ],
+                "summary": "List operations",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "per_page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by device ID",
+                        "name": "device_id",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "PRINT",
+                            "PAYMENT",
+                            "SCAN",
+                            "STATUS_CHECK",
+                            "OPEN_DRAWER",
+                            "DISPLAY_TEXT",
+                            "BEEP",
+                            "REFUND",
+                            "CUT"
+                        ],
+                        "type": "string",
+                        "description": "Filter by operation type",
+                        "name": "operation_type",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "PENDING",
+                            "PROCESSING",
+                            "SUCCESS",
+                            "FAILED",
+                            "TIMEOUT",
+                            "CANCELLED"
+                        ],
+                        "type": "string",
+                        "description": "Filter by status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date filter (RFC3339)",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date filter (RFC3339)",
+                        "name": "end_date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Operations retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "operations": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/definitions/model.DeviceOperation"
+                                                    }
+                                                },
+                                                "pagination": {
+                                                    "$ref": "#/definitions/service.PaginationResult"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/operations/{id}": {
+            "get": {
+                "description": "Get operation details and status by operation ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Operations"
+                ],
+                "summary": "Get operation details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Operation ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Operation retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.DeviceOperation"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid operation ID",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Operation not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/operations/{id}/cancel": {
+            "put": {
+                "description": "Cancel a pending or processing operation",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Operations"
+                ],
+                "summary": "Cancel operation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Operation ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Cancel operation request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.CancelOperationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Operation cancelled successfully",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Cancel failed",
+                        "schema": {
+                            "$ref": "#/definitions/utils.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/ready": {
+            "get": {
+                "description": "Check if service is ready to accept traffic",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Health"
+                ],
+                "summary": "Readiness check",
+                "responses": {
+                    "200": {
+                        "description": "Service is ready",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "string"
+                                },
+                                "timestamp": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Service is not ready",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "reason": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "driver.DeviceInfo": {
+            "type": "object",
+            "properties": {
+                "brand": {
+                    "$ref": "#/definitions/model.DeviceBrand"
+                },
+                "capabilities": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Capability"
+                    }
+                },
+                "connection_type": {
+                    "$ref": "#/definitions/model.ConnectionType"
+                },
+                "firmware_version": {
+                    "type": "string"
+                },
+                "hardware_version": {
+                    "type": "string"
+                },
+                "manufacturer": {
+                    "type": "string"
+                },
+                "model": {
+                    "type": "string"
+                },
+                "serial_number": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.AutoSetupRequest": {
+            "type": "object",
+            "required": [
+                "branch_id"
+            ],
+            "properties": {
+                "auto_connect": {
+                    "type": "boolean"
+                },
+                "branch_id": {
+                    "type": "string"
+                },
+                "device_filter": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "handler.CancelOperationRequest": {
+            "type": "object",
+            "required": [
+                "reason"
+            ],
+            "properties": {
+                "reason": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.CheckResult": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "message": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.DisplayRequest": {
+            "type": "object",
+            "required": [
+                "line1"
+            ],
+            "properties": {
+                "clear": {
+                    "type": "boolean"
+                },
+                "duration": {
+                    "type": "integer"
+                },
+                "line1": {
+                    "type": "string"
+                },
+                "line2": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.HealthResponse": {
+            "type": "object",
+            "properties": {
+                "checks": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/handler.CheckResult"
+                    }
+                },
+                "service": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "timestamp": {
+                    "type": "string"
+                },
+                "uptime": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.PaymentRequest": {
+            "type": "object",
+            "required": [
+                "amount",
+                "payment_method"
+            ],
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "payment_method": {
+                    "type": "string"
+                },
+                "reference": {
+                    "type": "string"
+                },
+                "timeout": {
+                    "type": "integer"
+                }
+            }
+        },
+        "handler.PrintRequest": {
+            "type": "object",
+            "required": [
+                "content"
+            ],
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "content_type": {
+                    "type": "string"
+                },
+                "copies": {
+                    "type": "integer"
+                },
+                "cut": {
+                    "type": "boolean"
+                },
+                "open_drawer": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "handler.ScanRequest": {
+            "type": "object",
+            "required": [
+                "scan_type"
+            ],
+            "properties": {
+                "scan_type": {
+                    "type": "string"
+                },
+                "timeout": {
+                    "type": "integer"
+                }
+            }
+        },
+        "handler.UpdateConfigRequest": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            }
+        },
+        "model.Capability": {
+            "type": "string",
+            "enum": [
+                "PRINT",
+                "CUT",
+                "DRAWER",
+                "DISPLAY",
+                "PAYMENT",
+                "SCAN",
+                "STATUS",
+                "BEEP",
+                "LOGO",
+                "BARCODE",
+                "QR"
+            ],
+            "x-enum-varnames": [
+                "CapabilityPrint",
+                "CapabilityCut",
+                "CapabilityDrawer",
+                "CapabilityDisplay",
+                "CapabilityPayment",
+                "CapabilityScan",
+                "CapabilityStatus",
+                "CapabilityBeep",
+                "CapabilityLogo",
+                "CapabilityBarcode",
+                "CapabilityQR"
+            ]
+        },
+        "model.ConnectionType": {
+            "type": "string",
+            "enum": [
+                "SERIAL",
+                "USB",
+                "TCP",
+                "BLUETOOTH"
+            ],
+            "x-enum-varnames": [
+                "ConnectionTypeSerial",
+                "ConnectionTypeUSB",
+                "ConnectionTypeTCP",
+                "ConnectionTypeBluetooth"
+            ]
+        },
+        "model.Device": {
+            "type": "object",
+            "properties": {
+                "branch_id": {
+                    "type": "string"
+                },
+                "brand": {
+                    "$ref": "#/definitions/model.DeviceBrand"
+                },
+                "capabilities": {
+                    "type": "array",
+                    "items": {}
+                },
+                "connection_config": {
+                    "$ref": "#/definitions/model.JSONObject"
+                },
+                "connection_type": {
+                    "$ref": "#/definitions/model.ConnectionType"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "device_id": {
+                    "type": "string"
+                },
+                "device_type": {
+                    "$ref": "#/definitions/model.DeviceType"
+                },
+                "error_info": {
+                    "$ref": "#/definitions/model.JSONObject"
+                },
+                "firmware_version": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "last_ping": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "model": {
+                    "type": "string"
+                },
+                "performance_metrics": {
+                    "$ref": "#/definitions/model.JSONObject"
+                },
+                "status": {
+                    "$ref": "#/definitions/model.DeviceStatus"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.DeviceBrand": {
+            "type": "string",
+            "enum": [
+                "EPSON",
+                "STAR",
+                "INGENICO",
+                "PAX",
+                "CITIZEN",
+                "BIXOLON",
+                "VERIFONE",
+                "GENERIC"
+            ],
+            "x-enum-varnames": [
+                "BrandEpson",
+                "BrandStar",
+                "BrandIngenico",
+                "BrandPAX",
+                "BrandCitizen",
+                "BrandBixolon",
+                "BrandVerifone",
+                "BrandGeneric"
+            ]
+        },
+        "model.DeviceOperation": {
+            "type": "object",
+            "properties": {
+                "completed_at": {
+                    "type": "string"
+                },
+                "correlation_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "device_id": {
+                    "type": "string"
+                },
+                "duration_ms": {
+                    "type": "integer"
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "operation_data": {
+                    "$ref": "#/definitions/model.JSONObject"
+                },
+                "operation_type": {
+                    "$ref": "#/definitions/model.OperationType"
+                },
+                "priority": {
+                    "$ref": "#/definitions/model.OperationPriority"
+                },
+                "result": {
+                    "$ref": "#/definitions/model.JSONObject"
+                },
+                "retry_count": {
+                    "type": "integer"
+                },
+                "started_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/model.OperationStatus"
+                }
+            }
+        },
+        "model.DeviceStatus": {
+            "type": "string",
+            "enum": [
+                "ONLINE",
+                "OFFLINE",
+                "ERROR",
+                "MAINTENANCE",
+                "CONNECTING"
+            ],
+            "x-enum-varnames": [
+                "DeviceStatusOnline",
+                "DeviceStatusOffline",
+                "DeviceStatusError",
+                "DeviceStatusMaintenance",
+                "DeviceStatusConnecting"
+            ]
+        },
+        "model.DeviceType": {
+            "type": "string",
+            "enum": [
+                "POS",
+                "PRINTER",
+                "SCANNER",
+                "CASH_REGISTER",
+                "CASH_DRAWER",
+                "DISPLAY"
+            ],
+            "x-enum-varnames": [
+                "DeviceTypePOS",
+                "DeviceTypePrinter",
+                "DeviceTypeScanner",
+                "DeviceTypeCashRegister",
+                "DeviceTypeCashDrawer",
+                "DeviceTypeDisplay"
+            ]
+        },
+        "model.JSONObject": {
+            "type": "object",
+            "additionalProperties": true
+        },
+        "model.OperationPriority": {
+            "type": "integer",
+            "enum": [
+                1,
+                2,
+                3,
+                4,
+                5
+            ],
+            "x-enum-comments": {
+                "PriorityBackground": "Bulk operations",
+                "PriorityHigh": "Receipt printing, cash drawer",
+                "PriorityLow": "Logging, analytics",
+                "PriorityNormal": "Status updates, configurations",
+                "PriorityUltraCritical": "Payment responses, emergency stops"
+            },
+            "x-enum-varnames": [
+                "PriorityUltraCritical",
+                "PriorityHigh",
+                "PriorityNormal",
+                "PriorityLow",
+                "PriorityBackground"
+            ]
+        },
+        "model.OperationStatus": {
+            "type": "string",
+            "enum": [
+                "PENDING",
+                "PROCESSING",
+                "SUCCESS",
+                "FAILED",
+                "TIMEOUT",
+                "CANCELLED"
+            ],
+            "x-enum-varnames": [
+                "OperationStatusPending",
+                "OperationStatusProcessing",
+                "OperationStatusSuccess",
+                "OperationStatusFailed",
+                "OperationStatusTimeout",
+                "OperationStatusCancelled"
+            ]
+        },
+        "model.OperationType": {
+            "type": "string",
+            "enum": [
+                "PRINT",
+                "PAYMENT",
+                "SCAN",
+                "STATUS_CHECK",
+                "OPEN_DRAWER",
+                "DISPLAY_TEXT",
+                "BEEP",
+                "REFUND",
+                "CUT"
+            ],
+            "x-enum-varnames": [
+                "OperationTypePrint",
+                "OperationTypePayment",
+                "OperationTypeScan",
+                "OperationTypeStatusCheck",
+                "OperationTypeOpenDrawer",
+                "OperationTypeDisplayText",
+                "OperationTypeBeep",
+                "OperationTypeRefund",
+                "OperationTypeCut"
+            ]
+        },
+        "service.AutoSetupResult": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "failed": {
+                    "type": "integer"
+                },
+                "setup_devices": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/service.SetupDeviceResult"
+                    }
+                },
+                "successfully_setup": {
+                    "type": "integer"
+                },
+                "total_scanned": {
+                    "type": "integer"
+                }
+            }
+        },
+        "service.DeviceHealth": {
+            "type": "object",
+            "properties": {
+                "device_id": {
+                    "type": "string"
+                },
+                "error_rate": {
+                    "type": "number"
+                },
+                "health_score": {
+                    "type": "integer"
+                },
+                "last_check": {
+                    "type": "string"
+                },
+                "metrics": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "response_time": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "uptime": {
+                    "type": "number"
+                }
+            }
+        },
+        "service.DiscoveredDevice": {
+            "type": "object",
+            "properties": {
+                "brand": {
+                    "$ref": "#/definitions/model.DeviceBrand"
+                },
+                "capabilities": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "confidence": {
+                    "description": "0.0-1.0",
+                    "type": "number"
+                },
+                "connection_info": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "connection_type": {
+                    "$ref": "#/definitions/model.ConnectionType"
+                },
+                "device_type": {
+                    "$ref": "#/definitions/model.DeviceType"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "model": {
+                    "type": "string"
+                },
+                "serial_number": {
+                    "type": "string"
+                }
+            }
+        },
+        "service.OperationResponse": {
+            "type": "object",
+            "properties": {
+                "duration": {
+                    "type": "string"
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "operation_id": {
+                    "type": "string"
+                },
+                "result": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "service.PaginationResult": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "type": "integer"
+                },
+                "per_page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                }
+            }
+        },
+        "service.RegisterDeviceRequest": {
+            "type": "object",
+            "properties": {
+                "branch_id": {
+                    "type": "string"
+                },
+                "brand": {
+                    "$ref": "#/definitions/model.DeviceBrand"
+                },
+                "connection_config": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "connection_type": {
+                    "$ref": "#/definitions/model.ConnectionType"
+                },
+                "device_id": {
+                    "type": "string"
+                },
+                "device_type": {
+                    "$ref": "#/definitions/model.DeviceType"
+                },
+                "firmware_version": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "model": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "service.SetupDeviceResult": {
+            "type": "object",
+            "properties": {
+                "brand": {
+                    "$ref": "#/definitions/model.DeviceBrand"
+                },
+                "connection_type": {
+                    "$ref": "#/definitions/model.ConnectionType"
+                },
+                "device_id": {
+                    "type": "string"
+                },
+                "error": {
+                    "type": "string"
+                },
+                "model": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "SUCCESS, FAILED",
+                    "type": "string"
+                }
+            }
+        },
+        "service.SupportedDevicesResponse": {
+            "type": "object",
+            "properties": {
+                "capabilities": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "devices": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "total_brands": {
+                    "type": "integer"
+                }
+            }
+        },
+        "service.TestResult": {
+            "type": "object",
+            "properties": {
+                "device_info": {
+                    "$ref": "#/definitions/driver.DeviceInfo"
+                },
+                "duration": {
+                    "type": "string"
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "utils.APIError": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "details": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "utils.APIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "error": {
+                    "$ref": "#/definitions/utils.APIError"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "request_id": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                },
+                "timestamp": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Type \"Bearer\" followed by a space and JWT token.",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}

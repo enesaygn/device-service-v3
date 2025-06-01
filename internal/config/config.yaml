@@ -1,0 +1,97 @@
+server:
+  host: "0.0.0.0"
+  port: "8084"
+  read_timeout: "30s"
+  write_timeout: "30s"
+  idle_timeout: "120s"
+  tls:
+    enabled: false
+
+database:
+  host: "localhost"
+  port: 5432
+  user: "postgres"
+  password: "a"
+  dbname: "postgres"
+  sslmode: "disable"
+  max_open_conns: 25
+  max_idle_conns: 5
+  max_lifetime: "5m"
+
+redis:
+  host: "localhost"
+  port: 6379
+  password: ""
+  db: 0
+  pool_size: 10
+
+rabbitmq:
+  host: "localhost"
+  port: 5672
+  user: "guest"
+  password: "guest"
+  vhost: "/"
+  exchange: "device.events"
+
+offline:
+  enabled: true
+  local_db_path: "./data/offline.db"
+  sync_interval: "30s"
+  max_queue_size: 10000
+  retry_attempts: 3
+  retry_delay: "5s"
+
+security:
+  jwt_secret: "your-dev-jwt-secret-key-here"
+  jwt_expiration: "24h"
+  device_auth_required: false
+  cert_validation: false
+  allowed_origins: ["*"]
+  rate_limit_enabled: false
+
+logging:
+  level: "debug"
+  format: "console"
+  output: "stdout"
+
+device:
+  discovery_interval: "60s"
+  health_check_interval: "10s"
+  ping_interval: "5s"
+  operation_timeout: "30s"
+  max_retry_attempts: 3
+  retry_delay: "2s"
+  supported_brands:
+    - "EPSON"
+    - "STAR"
+    - "INGENICO"
+    - "PAX"
+    - "CITIZEN"
+    - "BIXOLON"
+    - "VERIFONE"
+    - "GENERIC"
+  default_ports:
+    serial:
+      baud_rate: 9600
+      data_bits: 8
+      stop_bits: 1
+      parity: "none"
+      timeout: "5s"
+    tcp:
+      connect_timeout: "10s"
+      read_timeout: "30s"
+      write_timeout: "30s"
+      keep_alive: true
+    usb:
+      timeout: "5s"
+      bulk_transfer_size: 64
+    bluetooth:
+      scan_timeout: "30s"
+      connect_timeout: "20s"
+
+app:
+  name: "device-service"
+  version: "1.0.0"
+  environment: "development"
+  app_id: "66920ee79f1fd8809417ea"
+  debug: true

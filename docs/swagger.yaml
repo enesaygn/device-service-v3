@@ -1,0 +1,1466 @@
+basePath: /api/v1
+definitions:
+  driver.DeviceInfo:
+    properties:
+      brand:
+        $ref: '#/definitions/model.DeviceBrand'
+      capabilities:
+        items:
+          $ref: '#/definitions/model.Capability'
+        type: array
+      connection_type:
+        $ref: '#/definitions/model.ConnectionType'
+      firmware_version:
+        type: string
+      hardware_version:
+        type: string
+      manufacturer:
+        type: string
+      model:
+        type: string
+      serial_number:
+        type: string
+    type: object
+  handler.AutoSetupRequest:
+    properties:
+      auto_connect:
+        type: boolean
+      branch_id:
+        type: string
+      device_filter:
+        additionalProperties:
+          type: string
+        type: object
+    required:
+    - branch_id
+    type: object
+  handler.CancelOperationRequest:
+    properties:
+      reason:
+        type: string
+    required:
+    - reason
+    type: object
+  handler.CheckResult:
+    properties:
+      data:
+        additionalProperties: true
+        type: object
+      message:
+        type: string
+      status:
+        type: string
+    type: object
+  handler.DisplayRequest:
+    properties:
+      clear:
+        type: boolean
+      duration:
+        type: integer
+      line1:
+        type: string
+      line2:
+        type: string
+    required:
+    - line1
+    type: object
+  handler.HealthResponse:
+    properties:
+      checks:
+        additionalProperties:
+          $ref: '#/definitions/handler.CheckResult'
+        type: object
+      service:
+        type: string
+      status:
+        type: string
+      timestamp:
+        type: string
+      uptime:
+        type: string
+      version:
+        type: string
+    type: object
+  handler.PaymentRequest:
+    properties:
+      amount:
+        type: number
+      currency:
+        type: string
+      payment_method:
+        type: string
+      reference:
+        type: string
+      timeout:
+        type: integer
+    required:
+    - amount
+    - payment_method
+    type: object
+  handler.PrintRequest:
+    properties:
+      content:
+        type: string
+      content_type:
+        type: string
+      copies:
+        type: integer
+      cut:
+        type: boolean
+      open_drawer:
+        type: boolean
+    required:
+    - content
+    type: object
+  handler.ScanRequest:
+    properties:
+      scan_type:
+        type: string
+      timeout:
+        type: integer
+    required:
+    - scan_type
+    type: object
+  handler.UpdateConfigRequest:
+    properties:
+      config:
+        additionalProperties: true
+        type: object
+    type: object
+  model.Capability:
+    enum:
+    - PRINT
+    - CUT
+    - DRAWER
+    - DISPLAY
+    - PAYMENT
+    - SCAN
+    - STATUS
+    - BEEP
+    - LOGO
+    - BARCODE
+    - QR
+    type: string
+    x-enum-varnames:
+    - CapabilityPrint
+    - CapabilityCut
+    - CapabilityDrawer
+    - CapabilityDisplay
+    - CapabilityPayment
+    - CapabilityScan
+    - CapabilityStatus
+    - CapabilityBeep
+    - CapabilityLogo
+    - CapabilityBarcode
+    - CapabilityQR
+  model.ConnectionType:
+    enum:
+    - SERIAL
+    - USB
+    - TCP
+    - BLUETOOTH
+    type: string
+    x-enum-varnames:
+    - ConnectionTypeSerial
+    - ConnectionTypeUSB
+    - ConnectionTypeTCP
+    - ConnectionTypeBluetooth
+  model.Device:
+    properties:
+      branch_id:
+        type: string
+      brand:
+        $ref: '#/definitions/model.DeviceBrand'
+      capabilities:
+        items: {}
+        type: array
+      connection_config:
+        $ref: '#/definitions/model.JSONObject'
+      connection_type:
+        $ref: '#/definitions/model.ConnectionType'
+      created_at:
+        type: string
+      device_id:
+        type: string
+      device_type:
+        $ref: '#/definitions/model.DeviceType'
+      error_info:
+        $ref: '#/definitions/model.JSONObject'
+      firmware_version:
+        type: string
+      id:
+        type: string
+      last_ping:
+        type: string
+      location:
+        type: string
+      model:
+        type: string
+      performance_metrics:
+        $ref: '#/definitions/model.JSONObject'
+      status:
+        $ref: '#/definitions/model.DeviceStatus'
+      updated_at:
+        type: string
+    type: object
+  model.DeviceBrand:
+    enum:
+    - EPSON
+    - STAR
+    - INGENICO
+    - PAX
+    - CITIZEN
+    - BIXOLON
+    - VERIFONE
+    - GENERIC
+    type: string
+    x-enum-varnames:
+    - BrandEpson
+    - BrandStar
+    - BrandIngenico
+    - BrandPAX
+    - BrandCitizen
+    - BrandBixolon
+    - BrandVerifone
+    - BrandGeneric
+  model.DeviceOperation:
+    properties:
+      completed_at:
+        type: string
+      correlation_id:
+        type: string
+      created_at:
+        type: string
+      device_id:
+        type: string
+      duration_ms:
+        type: integer
+      error_message:
+        type: string
+      id:
+        type: string
+      operation_data:
+        $ref: '#/definitions/model.JSONObject'
+      operation_type:
+        $ref: '#/definitions/model.OperationType'
+      priority:
+        $ref: '#/definitions/model.OperationPriority'
+      result:
+        $ref: '#/definitions/model.JSONObject'
+      retry_count:
+        type: integer
+      started_at:
+        type: string
+      status:
+        $ref: '#/definitions/model.OperationStatus'
+    type: object
+  model.DeviceStatus:
+    enum:
+    - ONLINE
+    - OFFLINE
+    - ERROR
+    - MAINTENANCE
+    - CONNECTING
+    type: string
+    x-enum-varnames:
+    - DeviceStatusOnline
+    - DeviceStatusOffline
+    - DeviceStatusError
+    - DeviceStatusMaintenance
+    - DeviceStatusConnecting
+  model.DeviceType:
+    enum:
+    - POS
+    - PRINTER
+    - SCANNER
+    - CASH_REGISTER
+    - CASH_DRAWER
+    - DISPLAY
+    type: string
+    x-enum-varnames:
+    - DeviceTypePOS
+    - DeviceTypePrinter
+    - DeviceTypeScanner
+    - DeviceTypeCashRegister
+    - DeviceTypeCashDrawer
+    - DeviceTypeDisplay
+  model.JSONObject:
+    additionalProperties: true
+    type: object
+  model.OperationPriority:
+    enum:
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    type: integer
+    x-enum-comments:
+      PriorityBackground: Bulk operations
+      PriorityHigh: Receipt printing, cash drawer
+      PriorityLow: Logging, analytics
+      PriorityNormal: Status updates, configurations
+      PriorityUltraCritical: Payment responses, emergency stops
+    x-enum-varnames:
+    - PriorityUltraCritical
+    - PriorityHigh
+    - PriorityNormal
+    - PriorityLow
+    - PriorityBackground
+  model.OperationStatus:
+    enum:
+    - PENDING
+    - PROCESSING
+    - SUCCESS
+    - FAILED
+    - TIMEOUT
+    - CANCELLED
+    type: string
+    x-enum-varnames:
+    - OperationStatusPending
+    - OperationStatusProcessing
+    - OperationStatusSuccess
+    - OperationStatusFailed
+    - OperationStatusTimeout
+    - OperationStatusCancelled
+  model.OperationType:
+    enum:
+    - PRINT
+    - PAYMENT
+    - SCAN
+    - STATUS_CHECK
+    - OPEN_DRAWER
+    - DISPLAY_TEXT
+    - BEEP
+    - REFUND
+    - CUT
+    type: string
+    x-enum-varnames:
+    - OperationTypePrint
+    - OperationTypePayment
+    - OperationTypeScan
+    - OperationTypeStatusCheck
+    - OperationTypeOpenDrawer
+    - OperationTypeDisplayText
+    - OperationTypeBeep
+    - OperationTypeRefund
+    - OperationTypeCut
+  service.AutoSetupResult:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      failed:
+        type: integer
+      setup_devices:
+        items:
+          $ref: '#/definitions/service.SetupDeviceResult'
+        type: array
+      successfully_setup:
+        type: integer
+      total_scanned:
+        type: integer
+    type: object
+  service.DeviceHealth:
+    properties:
+      device_id:
+        type: string
+      error_rate:
+        type: number
+      health_score:
+        type: integer
+      last_check:
+        type: string
+      metrics:
+        additionalProperties: true
+        type: object
+      response_time:
+        type: integer
+      status:
+        type: string
+      uptime:
+        type: number
+    type: object
+  service.DiscoveredDevice:
+    properties:
+      brand:
+        $ref: '#/definitions/model.DeviceBrand'
+      capabilities:
+        items:
+          type: string
+        type: array
+      confidence:
+        description: 0.0-1.0
+        type: number
+      connection_info:
+        additionalProperties: true
+        type: object
+      connection_type:
+        $ref: '#/definitions/model.ConnectionType'
+      device_type:
+        $ref: '#/definitions/model.DeviceType'
+      location:
+        type: string
+      model:
+        type: string
+      serial_number:
+        type: string
+    type: object
+  service.OperationResponse:
+    properties:
+      duration:
+        type: string
+      error_message:
+        type: string
+      operation_id:
+        type: string
+      result:
+        additionalProperties: true
+        type: object
+      success:
+        type: boolean
+    type: object
+  service.PaginationResult:
+    properties:
+      page:
+        type: integer
+      per_page:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  service.RegisterDeviceRequest:
+    properties:
+      branch_id:
+        type: string
+      brand:
+        $ref: '#/definitions/model.DeviceBrand'
+      connection_config:
+        additionalProperties: true
+        type: object
+      connection_type:
+        $ref: '#/definitions/model.ConnectionType'
+      device_id:
+        type: string
+      device_type:
+        $ref: '#/definitions/model.DeviceType'
+      firmware_version:
+        type: string
+      location:
+        type: string
+      model:
+        type: string
+      user_id:
+        type: string
+    type: object
+  service.SetupDeviceResult:
+    properties:
+      brand:
+        $ref: '#/definitions/model.DeviceBrand'
+      connection_type:
+        $ref: '#/definitions/model.ConnectionType'
+      device_id:
+        type: string
+      error:
+        type: string
+      model:
+        type: string
+      status:
+        description: SUCCESS, FAILED
+        type: string
+    type: object
+  service.SupportedDevicesResponse:
+    properties:
+      capabilities:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+      devices:
+        additionalProperties:
+          additionalProperties:
+            items:
+              type: string
+            type: array
+          type: object
+        type: object
+      total_brands:
+        type: integer
+    type: object
+  service.TestResult:
+    properties:
+      device_info:
+        $ref: '#/definitions/driver.DeviceInfo'
+      duration:
+        type: string
+      error_message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  utils.APIError:
+    properties:
+      code:
+        type: string
+      details:
+        type: string
+      message:
+        type: string
+    type: object
+  utils.APIResponse:
+    properties:
+      data: {}
+      error:
+        $ref: '#/definitions/utils.APIError'
+      message:
+        type: string
+      request_id:
+        type: string
+      success:
+        type: boolean
+      timestamp:
+        type: string
+    type: object
+host: localhost:8084
+info:
+  contact:
+    email: support@deviceservice.com
+    name: Device Service API Support
+  description: Enterprise Device Management Service for POS systems, printers, and
+    payment terminals
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Device Service API
+  version: 1.0.0
+paths:
+  /devices:
+    get:
+      consumes:
+      - application/json
+      description: Get list of devices with filtering and pagination support
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      - description: Filter by branch ID
+        in: query
+        name: branch_id
+        type: string
+      - description: Filter by device type
+        enum:
+        - POS
+        - PRINTER
+        - SCANNER
+        - CASH_REGISTER
+        - CASH_DRAWER
+        - DISPLAY
+        in: query
+        name: device_type
+        type: string
+      - description: Filter by brand
+        enum:
+        - EPSON
+        - STAR
+        - INGENICO
+        - PAX
+        - CITIZEN
+        - BIXOLON
+        - VERIFONE
+        - GENERIC
+        in: query
+        name: brand
+        type: string
+      - description: Filter by status
+        enum:
+        - ONLINE
+        - OFFLINE
+        - ERROR
+        - MAINTENANCE
+        - CONNECTING
+        in: query
+        name: status
+        type: string
+      - description: Filter by location
+        in: query
+        name: location
+        type: string
+      - default: created_at
+        description: Sort by field
+        in: query
+        name: sort_by
+        type: string
+      - default: desc
+        description: Sort order
+        enum:
+        - asc
+        - desc
+        in: query
+        name: sort_order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Devices retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  properties:
+                    devices:
+                      items:
+                        $ref: '#/definitions/model.Device'
+                      type: array
+                    pagination:
+                      $ref: '#/definitions/service.PaginationResult'
+                  type: object
+              type: object
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: List devices
+      tags:
+      - Devices
+    post:
+      consumes:
+      - application/json
+      description: Register a new device in the system with configuration
+      parameters:
+      - description: Device registration request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.RegisterDeviceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Device registered successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Device'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Register a new device
+      tags:
+      - Devices
+  /devices/{device_id}/display:
+    post:
+      consumes:
+      - application/json
+      description: Display text on customer display
+      parameters:
+      - description: Device ID
+        in: path
+        name: device_id
+        required: true
+        type: string
+      - description: Display request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.DisplayRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Display operation completed
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/service.OperationResponse'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Display operation failed
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Display text
+      tags:
+      - Operations
+  /devices/{device_id}/open-drawer:
+    post:
+      consumes:
+      - application/json
+      description: Open cash drawer on a device
+      parameters:
+      - description: Device ID
+        in: path
+        name: device_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Drawer opened successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/service.OperationResponse'
+              type: object
+        "400":
+          description: Invalid device ID
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Drawer operation failed
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Open cash drawer
+      tags:
+      - Operations
+  /devices/{device_id}/payment:
+    post:
+      consumes:
+      - application/json
+      description: Execute a payment operation on a device
+      parameters:
+      - description: Device ID
+        in: path
+        name: device_id
+        required: true
+        type: string
+      - description: Payment request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.PaymentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Payment operation completed
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/service.OperationResponse'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Payment operation failed
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Payment operation
+      tags:
+      - Operations
+  /devices/{device_id}/print:
+    post:
+      consumes:
+      - application/json
+      description: Execute a print operation on a device
+      parameters:
+      - description: Device ID
+        in: path
+        name: device_id
+        required: true
+        type: string
+      - description: Print request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.PrintRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Print operation completed
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/service.OperationResponse'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Print operation failed
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Print operation
+      tags:
+      - Operations
+  /devices/{device_id}/scan:
+    post:
+      consumes:
+      - application/json
+      description: Execute a scan operation on a device
+      parameters:
+      - description: Device ID
+        in: path
+        name: device_id
+        required: true
+        type: string
+      - description: Scan request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.ScanRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Scan operation completed
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/service.OperationResponse'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Scan operation failed
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Scan operation
+      tags:
+      - Operations
+  /devices/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get device details and current status by device ID
+      parameters:
+      - description: Device ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Device retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Device'
+              type: object
+        "400":
+          description: Invalid device ID
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "404":
+          description: Device not found
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Get device details
+      tags:
+      - Devices
+  /devices/{id}/config:
+    put:
+      consumes:
+      - application/json
+      description: Update device configuration settings
+      parameters:
+      - description: Device ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Configuration update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.UpdateConfigRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Device configuration updated successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Update failed
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Update device configuration
+      tags:
+      - Devices
+  /devices/{id}/connect:
+    post:
+      consumes:
+      - application/json
+      description: Establish connection to a device
+      parameters:
+      - description: Device ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Device connected successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Invalid device ID
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Connection failed
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Connect to device
+      tags:
+      - Devices
+  /devices/{id}/disconnect:
+    post:
+      consumes:
+      - application/json
+      description: Disconnect from a device
+      parameters:
+      - description: Device ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Device disconnected successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Invalid device ID
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Disconnection failed
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Disconnect from device
+      tags:
+      - Devices
+  /devices/{id}/health:
+    get:
+      consumes:
+      - application/json
+      description: Get current health metrics and status of a device
+      parameters:
+      - description: Device ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Device health retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/service.DeviceHealth'
+              type: object
+        "400":
+          description: Invalid device ID
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Failed to get device health
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Get device health
+      tags:
+      - Devices
+  /devices/{id}/test:
+    post:
+      consumes:
+      - application/json
+      description: Test connection and basic functionality of a device
+      parameters:
+      - description: Device ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Device test completed
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/service.TestResult'
+              type: object
+        "400":
+          description: Invalid device ID
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Test failed
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Test device connectivity
+      tags:
+      - Devices
+  /discovery/auto-setup:
+    post:
+      consumes:
+      - application/json
+      description: Automatically register and setup discovered devices
+      parameters:
+      - description: Auto-setup request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.AutoSetupRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Auto-setup completed
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/service.AutoSetupResult'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Auto-setup failed
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Auto-setup devices
+      tags:
+      - Discovery
+  /discovery/capabilities/{brand}/{type}:
+    get:
+      consumes:
+      - application/json
+      description: Get capabilities for a specific brand and device type
+      parameters:
+      - description: Device brand
+        enum:
+        - EPSON
+        - STAR
+        - INGENICO
+        - PAX
+        - CITIZEN
+        - BIXOLON
+        - VERIFONE
+        - GENERIC
+        in: path
+        name: brand
+        required: true
+        type: string
+      - description: Device type
+        enum:
+        - POS
+        - PRINTER
+        - SCANNER
+        - CASH_REGISTER
+        - CASH_DRAWER
+        - DISPLAY
+        in: path
+        name: type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Capabilities retrieved
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  properties:
+                    brand:
+                      type: string
+                    capabilities:
+                      items:
+                        type: string
+                      type: array
+                    device_type:
+                      type: string
+                  type: object
+              type: object
+        "404":
+          description: Device not supported
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Get device capabilities
+      tags:
+      - Discovery
+  /discovery/scan:
+    get:
+      consumes:
+      - application/json
+      description: Scan for available devices on serial, USB, TCP, or Bluetooth connections
+      parameters:
+      - default: all
+        description: Scan type
+        enum:
+        - all
+        - serial
+        - usb
+        - tcp
+        - bluetooth
+        in: query
+        name: type
+        type: string
+      - default: 30s
+        description: Scan timeout
+        in: query
+        name: timeout
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Device scan completed
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  properties:
+                    devices:
+                      items:
+                        $ref: '#/definitions/service.DiscoveredDevice'
+                      type: array
+                    devices_found:
+                      type: integer
+                  type: object
+              type: object
+        "500":
+          description: Scan failed
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Scan for devices
+      tags:
+      - Discovery
+  /discovery/supported:
+    get:
+      consumes:
+      - application/json
+      description: Get list of all supported device brands and models
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Supported devices retrieved
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/service.SupportedDevicesResponse'
+              type: object
+      summary: Get supported devices
+      tags:
+      - Discovery
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Get overall service health status including database connectivity
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Service is healthy
+          schema:
+            $ref: '#/definitions/handler.HealthResponse'
+        "503":
+          description: Service is unhealthy
+          schema:
+            $ref: '#/definitions/handler.HealthResponse'
+      summary: Health check
+      tags:
+      - Health
+  /health/db:
+    get:
+      consumes:
+      - application/json
+      description: Check database connectivity and performance
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Database is healthy
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "503":
+          description: Database is unhealthy
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Database health check
+      tags:
+      - Health
+  /live:
+    get:
+      consumes:
+      - application/json
+      description: Check if service is alive
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Service is alive
+          schema:
+            properties:
+              status:
+                type: string
+              timestamp:
+                type: string
+            type: object
+      summary: Liveness check
+      tags:
+      - Health
+  /operations:
+    get:
+      consumes:
+      - application/json
+      description: Get list of operations with filtering and pagination
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: per_page
+        type: integer
+      - description: Filter by device ID
+        in: query
+        name: device_id
+        type: string
+      - description: Filter by operation type
+        enum:
+        - PRINT
+        - PAYMENT
+        - SCAN
+        - STATUS_CHECK
+        - OPEN_DRAWER
+        - DISPLAY_TEXT
+        - BEEP
+        - REFUND
+        - CUT
+        in: query
+        name: operation_type
+        type: string
+      - description: Filter by status
+        enum:
+        - PENDING
+        - PROCESSING
+        - SUCCESS
+        - FAILED
+        - TIMEOUT
+        - CANCELLED
+        in: query
+        name: status
+        type: string
+      - description: Start date filter (RFC3339)
+        in: query
+        name: start_date
+        type: string
+      - description: End date filter (RFC3339)
+        in: query
+        name: end_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Operations retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  properties:
+                    operations:
+                      items:
+                        $ref: '#/definitions/model.DeviceOperation'
+                      type: array
+                    pagination:
+                      $ref: '#/definitions/service.PaginationResult'
+                  type: object
+              type: object
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: List operations
+      tags:
+      - Operations
+  /operations/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get operation details and status by operation ID
+      parameters:
+      - description: Operation ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Operation retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.DeviceOperation'
+              type: object
+        "400":
+          description: Invalid operation ID
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "404":
+          description: Operation not found
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Get operation details
+      tags:
+      - Operations
+  /operations/{id}/cancel:
+    put:
+      consumes:
+      - application/json
+      description: Cancel a pending or processing operation
+      parameters:
+      - description: Operation ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Cancel operation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CancelOperationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Operation cancelled successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Cancel failed
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Cancel operation
+      tags:
+      - Operations
+  /ready:
+    get:
+      consumes:
+      - application/json
+      description: Check if service is ready to accept traffic
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Service is ready
+          schema:
+            properties:
+              status:
+                type: string
+              timestamp:
+                type: string
+            type: object
+        "503":
+          description: Service is not ready
+          schema:
+            properties:
+              reason:
+                type: string
+              status:
+                type: string
+            type: object
+      summary: Readiness check
+      tags:
+      - Health
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

@@ -1,0 +1,40 @@
+server:
+  host: "0.0.0.0"
+  port: "8084"
+  tls:
+    enabled: true
+    cert_file: "/etc/ssl/device-service.crt"
+    key_file: "/etc/ssl/device-service.key"
+
+database:
+  host: "${DATABASE_HOST}"
+  port: 5432
+  user: "${DATABASE_USER}"
+  password: "${DATABASE_PASSWORD}"
+  dbname: "${DATABASE_NAME}"
+  sslmode: "require"
+  max_open_conns: 50
+  max_idle_conns: 10
+  max_lifetime: "1h"
+
+security:
+  jwt_secret: "${JWT_SECRET}"
+  device_auth_required: true
+  cert_validation: true
+  allowed_origins: ["https://your-domain.com"]
+  rate_limit_enabled: true
+  rate_limit_requests: 100
+  rate_limit_window: "1m"
+
+logging:
+  level: "info"
+  format: "json"
+  output: "/var/log/device-service/app.log"
+  max_size: 100
+  max_backups: 5
+  max_age: 30
+  compress: true
+
+app:
+  environment: "production"
+  debug: false
