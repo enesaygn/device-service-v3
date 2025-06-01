@@ -213,6 +213,7 @@ definitions:
     - BIXOLON
     - VERIFONE
     - GENERIC
+    - KODPOS
     type: string
     x-enum-varnames:
     - BrandEpson
@@ -223,6 +224,7 @@ definitions:
     - BrandBixolon
     - BrandVerifone
     - BrandGeneric
+    - BrandKodpos
   model.DeviceOperation:
     properties:
       completed_at:
@@ -670,6 +672,133 @@ paths:
       summary: Register a new device
       tags:
       - Devices
+  /devices/{device_id}:
+    get:
+      consumes:
+      - application/json
+      description: Get device details and current status by device ID
+      parameters:
+      - description: Device ID
+        in: path
+        name: device_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Device retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Device'
+              type: object
+        "400":
+          description: Invalid device ID
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "404":
+          description: Device not found
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Get device details
+      tags:
+      - Devices
+  /devices/{device_id}/config:
+    put:
+      consumes:
+      - application/json
+      description: Update device configuration settings
+      parameters:
+      - description: Device ID
+        in: path
+        name: device_id
+        required: true
+        type: string
+      - description: Configuration update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.UpdateConfigRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Device configuration updated successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Update failed
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Update device configuration
+      tags:
+      - Devices
+  /devices/{device_id}/connect:
+    post:
+      consumes:
+      - application/json
+      description: Establish connection to a device
+      parameters:
+      - description: Device ID
+        in: path
+        name: device_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Device connected successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Invalid device ID
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Connection failed
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Connect to device
+      tags:
+      - Devices
+  /devices/{device_id}/disconnect:
+    post:
+      consumes:
+      - application/json
+      description: Disconnect from a device
+      parameters:
+      - description: Device ID
+        in: path
+        name: device_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Device disconnected successfully
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "400":
+          description: Invalid device ID
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Disconnection failed
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Disconnect from device
+      tags:
+      - Devices
   /devices/{device_id}/display:
     post:
       consumes:
@@ -710,6 +839,40 @@ paths:
       summary: Display text
       tags:
       - Operations
+  /devices/{device_id}/health:
+    get:
+      consumes:
+      - application/json
+      description: Get current health metrics and status of a device
+      parameters:
+      - description: Device ID
+        in: path
+        name: device_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Device health retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/service.DeviceHealth'
+              type: object
+        "400":
+          description: Invalid device ID
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+        "500":
+          description: Failed to get device health
+          schema:
+            $ref: '#/definitions/utils.APIResponse'
+      summary: Get device health
+      tags:
+      - Devices
   /devices/{device_id}/open-drawer:
     post:
       consumes:
@@ -864,168 +1027,7 @@ paths:
       summary: Scan operation
       tags:
       - Operations
-  /devices/{id}:
-    get:
-      consumes:
-      - application/json
-      description: Get device details and current status by device ID
-      parameters:
-      - description: Device ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Device retrieved successfully
-          schema:
-            allOf:
-            - $ref: '#/definitions/utils.APIResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/model.Device'
-              type: object
-        "400":
-          description: Invalid device ID
-          schema:
-            $ref: '#/definitions/utils.APIResponse'
-        "404":
-          description: Device not found
-          schema:
-            $ref: '#/definitions/utils.APIResponse'
-      summary: Get device details
-      tags:
-      - Devices
-  /devices/{id}/config:
-    put:
-      consumes:
-      - application/json
-      description: Update device configuration settings
-      parameters:
-      - description: Device ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Configuration update request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handler.UpdateConfigRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Device configuration updated successfully
-          schema:
-            $ref: '#/definitions/utils.APIResponse'
-        "400":
-          description: Invalid request
-          schema:
-            $ref: '#/definitions/utils.APIResponse'
-        "500":
-          description: Update failed
-          schema:
-            $ref: '#/definitions/utils.APIResponse'
-      summary: Update device configuration
-      tags:
-      - Devices
-  /devices/{id}/connect:
-    post:
-      consumes:
-      - application/json
-      description: Establish connection to a device
-      parameters:
-      - description: Device ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Device connected successfully
-          schema:
-            $ref: '#/definitions/utils.APIResponse'
-        "400":
-          description: Invalid device ID
-          schema:
-            $ref: '#/definitions/utils.APIResponse'
-        "500":
-          description: Connection failed
-          schema:
-            $ref: '#/definitions/utils.APIResponse'
-      summary: Connect to device
-      tags:
-      - Devices
-  /devices/{id}/disconnect:
-    post:
-      consumes:
-      - application/json
-      description: Disconnect from a device
-      parameters:
-      - description: Device ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Device disconnected successfully
-          schema:
-            $ref: '#/definitions/utils.APIResponse'
-        "400":
-          description: Invalid device ID
-          schema:
-            $ref: '#/definitions/utils.APIResponse'
-        "500":
-          description: Disconnection failed
-          schema:
-            $ref: '#/definitions/utils.APIResponse'
-      summary: Disconnect from device
-      tags:
-      - Devices
-  /devices/{id}/health:
-    get:
-      consumes:
-      - application/json
-      description: Get current health metrics and status of a device
-      parameters:
-      - description: Device ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Device health retrieved successfully
-          schema:
-            allOf:
-            - $ref: '#/definitions/utils.APIResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/service.DeviceHealth'
-              type: object
-        "400":
-          description: Invalid device ID
-          schema:
-            $ref: '#/definitions/utils.APIResponse'
-        "500":
-          description: Failed to get device health
-          schema:
-            $ref: '#/definitions/utils.APIResponse'
-      summary: Get device health
-      tags:
-      - Devices
-  /devices/{id}/test:
+  /devices/{device_id}/test:
     post:
       consumes:
       - application/json
@@ -1033,7 +1035,7 @@ paths:
       parameters:
       - description: Device ID
         in: path
-        name: id
+        name: device_id
         required: true
         type: string
       produces:

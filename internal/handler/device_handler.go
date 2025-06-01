@@ -29,29 +29,6 @@ func NewDeviceHandler(deviceService *service.DeviceService, logger *zap.Logger) 
 	}
 }
 
-// RegisterRoutes registers device-related routes
-func (h *DeviceHandler) RegisterRoutes(router *gin.RouterGroup) {
-	devices := router.Group("/devices")
-	{
-		// Genel device routes
-		devices.POST("", h.RegisterDevice)
-		devices.GET("", h.ListDevices)
-
-		// Spesifik device routes - :id parametresi
-		deviceRoutes := devices.Group("/:id")
-		{
-			deviceRoutes.GET("", h.GetDevice)
-			deviceRoutes.PUT("", h.UpdateDevice)
-			deviceRoutes.DELETE("", h.DeleteDevice)
-			deviceRoutes.POST("/connect", h.ConnectDevice)
-			deviceRoutes.POST("/disconnect", h.DisconnectDevice)
-			deviceRoutes.POST("/test", h.TestDevice)
-			deviceRoutes.GET("/health", h.GetDeviceHealth)
-			deviceRoutes.PUT("/config", h.UpdateDeviceConfig)
-		}
-	}
-}
-
 // RegisterDevice registers a new device
 // @Summary Register a new device
 // @Description Register a new device in the system with configuration
@@ -128,8 +105,8 @@ func (h *DeviceHandler) ListDevices(c *gin.Context) {
 
 	// Parse filters
 	if branchID := c.Query("branch_id"); branchID != "" {
-		if id, err := uuid.Parse(branchID); err == nil {
-			filter.BranchID = &id
+		if device_id, err := uuid.Parse(branchID); err == nil {
+			filter.BranchID = &device_id
 		}
 	}
 	if deviceType := c.Query("device_type"); deviceType != "" {
@@ -177,13 +154,13 @@ func (h *DeviceHandler) ListDevices(c *gin.Context) {
 // @Tags Devices
 // @Accept json
 // @Produce json
-// @Param id path string true "Device ID"
+// @Param device_id path string true "Device ID"
 // @Success 200 {object} utils.APIResponse{data=model.Device} "Device retrieved successfully"
 // @Failure 400 {object} utils.APIResponse "Invalid device ID"
 // @Failure 404 {object} utils.APIResponse "Device not found"
-// @Router /devices/{id} [get]
+// @Router /devices/{device_id} [get]
 func (h *DeviceHandler) GetDevice(c *gin.Context) {
-	deviceID := c.Param("id")
+	deviceID := c.Param("device_id")
 	if deviceID == "" {
 		utils.ErrorResponse(c, http.StatusBadRequest, "Device ID is required", nil)
 		return
@@ -201,7 +178,7 @@ func (h *DeviceHandler) GetDevice(c *gin.Context) {
 
 // UpdateDevice handles device updates
 func (h *DeviceHandler) UpdateDevice(c *gin.Context) {
-	deviceID := c.Param("id")
+	deviceID := c.Param("device_id")
 	if deviceID == "" {
 		utils.ErrorResponse(c, http.StatusBadRequest, "Device ID is required", nil)
 		return
@@ -220,7 +197,7 @@ func (h *DeviceHandler) UpdateDevice(c *gin.Context) {
 
 // DeleteDevice handles device deletion
 func (h *DeviceHandler) DeleteDevice(c *gin.Context) {
-	deviceID := c.Param("id")
+	deviceID := c.Param("device_id")
 	if deviceID == "" {
 		utils.ErrorResponse(c, http.StatusBadRequest, "Device ID is required", nil)
 		return
@@ -242,13 +219,13 @@ func (h *DeviceHandler) DeleteDevice(c *gin.Context) {
 // @Tags Devices
 // @Accept json
 // @Produce json
-// @Param id path string true "Device ID"
+// @Param device_id path string true "Device ID"
 // @Success 200 {object} utils.APIResponse "Device connected successfully"
 // @Failure 400 {object} utils.APIResponse "Invalid device ID"
 // @Failure 500 {object} utils.APIResponse "Connection failed"
-// @Router /devices/{id}/connect [post]
+// @Router /devices/{device_id}/connect [post]
 func (h *DeviceHandler) ConnectDevice(c *gin.Context) {
-	deviceID := c.Param("id")
+	deviceID := c.Param("device_id")
 	if deviceID == "" {
 		utils.ErrorResponse(c, http.StatusBadRequest, "Device ID is required", nil)
 		return
@@ -269,13 +246,13 @@ func (h *DeviceHandler) ConnectDevice(c *gin.Context) {
 // @Tags Devices
 // @Accept json
 // @Produce json
-// @Param id path string true "Device ID"
+// @Param device_id path string true "Device ID"
 // @Success 200 {object} utils.APIResponse "Device disconnected successfully"
 // @Failure 400 {object} utils.APIResponse "Invalid device ID"
 // @Failure 500 {object} utils.APIResponse "Disconnection failed"
-// @Router /devices/{id}/disconnect [post]
+// @Router /devices/{device_id}/disconnect [post]
 func (h *DeviceHandler) DisconnectDevice(c *gin.Context) {
-	deviceID := c.Param("id")
+	deviceID := c.Param("device_id")
 	if deviceID == "" {
 		utils.ErrorResponse(c, http.StatusBadRequest, "Device ID is required", nil)
 		return
@@ -296,13 +273,13 @@ func (h *DeviceHandler) DisconnectDevice(c *gin.Context) {
 // @Tags Devices
 // @Accept json
 // @Produce json
-// @Param id path string true "Device ID"
+// @Param device_id path string true "Device ID"
 // @Success 200 {object} utils.APIResponse{data=service.TestResult} "Device test completed"
 // @Failure 400 {object} utils.APIResponse "Invalid device ID"
 // @Failure 500 {object} utils.APIResponse "Test failed"
-// @Router /devices/{id}/test [post]
+// @Router /devices/{device_id}/test [post]
 func (h *DeviceHandler) TestDevice(c *gin.Context) {
-	deviceID := c.Param("id")
+	deviceID := c.Param("device_id")
 	if deviceID == "" {
 		utils.ErrorResponse(c, http.StatusBadRequest, "Device ID is required", nil)
 		return
@@ -324,13 +301,13 @@ func (h *DeviceHandler) TestDevice(c *gin.Context) {
 // @Tags Devices
 // @Accept json
 // @Produce json
-// @Param id path string true "Device ID"
+// @Param device_id path string true "Device ID"
 // @Success 200 {object} utils.APIResponse{data=service.DeviceHealth} "Device health retrieved successfully"
 // @Failure 400 {object} utils.APIResponse "Invalid device ID"
 // @Failure 500 {object} utils.APIResponse "Failed to get device health"
-// @Router /devices/{id}/health [get]
+// @Router /devices/{device_id}/health [get]
 func (h *DeviceHandler) GetDeviceHealth(c *gin.Context) {
-	deviceID := c.Param("id")
+	deviceID := c.Param("device_id")
 	if deviceID == "" {
 		utils.ErrorResponse(c, http.StatusBadRequest, "Device ID is required", nil)
 		return
@@ -352,14 +329,14 @@ func (h *DeviceHandler) GetDeviceHealth(c *gin.Context) {
 // @Tags Devices
 // @Accept json
 // @Produce json
-// @Param id path string true "Device ID"
+// @Param device_id path string true "Device ID"
 // @Param request body UpdateConfigRequest true "Configuration update request"
 // @Success 200 {object} utils.APIResponse "Device configuration updated successfully"
 // @Failure 400 {object} utils.APIResponse "Invalid request"
 // @Failure 500 {object} utils.APIResponse "Update failed"
-// @Router /devices/{id}/config [put]
+// @Router /devices/{device_id}/config [put]
 func (h *DeviceHandler) UpdateDeviceConfig(c *gin.Context) {
-	deviceID := c.Param("id")
+	deviceID := c.Param("device_id")
 	if deviceID == "" {
 		utils.ErrorResponse(c, http.StatusBadRequest, "Device ID is required", nil)
 		return

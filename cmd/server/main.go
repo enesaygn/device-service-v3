@@ -10,19 +10,15 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	swaggerfiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.uber.org/zap"
 
 	_ "device-service/docs"
 	"device-service/internal/config"
 	"device-service/internal/database"
 	"device-service/internal/driver"
-	"device-service/internal/handler"
-	"device-service/internal/middleware"
 	"device-service/internal/model"
 	"device-service/internal/repository"
+	"device-service/internal/routes"
 	"device-service/internal/service"
 	"device-service/internal/utils"
 )
@@ -203,22 +199,21 @@ func (app *Application) initializeServices() error {
 }
 
 // initializeServer sets up HTTP server and routes
+// cmd/server/main.go - initializeServer method'unu güncelle
+
 func (app *Application) initializeServer() error {
-	// Set Gin mode
-	if app.config.IsProduction() {
-		gin.SetMode(gin.ReleaseMode)
-	} else {
-		gin.SetMode(gin.DebugMode)
-	}
+	// Create router
+	routerManager := routes.NewRouter(
+		app.config,
+		app.logger,
+		app.database,
+		app.deviceService,
+		app.operationService,
+		app.discoveryService,
+	)
 
-	// Create Gin engine
-	router := gin.New()
-
-	// Add middleware
-	app.addMiddleware(router)
-
-	// Add routes
-	app.addRoutes(router)
+	// Setup router with all routes
+	router := routerManager.SetupRouter()
 
 	// Create HTTP server
 	app.server = &http.Server{
@@ -235,151 +230,6 @@ func (app *Application) initializeServer() error {
 	)
 
 	return nil
-}
-
-// addMiddleware adds middleware to the router
-func (app *Application) addMiddleware(router *gin.Engine) {
-	// Recovery middleware
-	router.Use(middleware.RecoveryMiddleware(app.logger))
-
-	// Request ID middleware
-	router.Use(middleware.RequestIDMiddleware())
-
-	// Logging middleware
-	serviceLogger := utils.NewServiceLogger(app.logger, "http-server")
-	router.Use(middleware.LoggingMiddleware(serviceLogger))
-
-	// CORS middleware
-	router.Use(middleware.CORSMiddleware(&app.config.Security))
-
-	// Authentication middleware would go here
-	// router.Use(middleware.AuthMiddleware(&app.config.Security))
-
-	app.logger.Info("Middleware configured")
-}
-
-// addRoutes adds all routes to the router
-// Updated addRoutes method in main.go
-// cmd/server/main.go - addRoutes method düzeltilmiş
-// cmd/server/main.go - addRoutes method tamamen düzeltilmiş
-func (app *Application) addRoutes(router *gin.Engine) {
-	// Health check routes (no authentication required)
-	healthHandler := handler.NewHealthHandler(app.database, app.config, app.logger)
-	healthHandler.RegisterRoutes(router.Group(""))
-
-	// API routes
-	api := router.Group("/api/v1")
-
-	// Device routes
-	deviceHandler := handler.NewDeviceHandler(app.deviceService, app.logger)
-	deviceHandler.RegisterRoutes(api)
-
-	// Operation routes (genel operation routes)
-	operationHandler := handler.NewOperationHandler(app.operationService, app.logger)
-	operationHandler.RegisterRoutes(api)
-
-	// Device-specific operation routes (ayrı prefix ile)
-	operationHandler.RegisterDeviceRoutes(api)
-
-	// Discovery routes
-	discoveryHandler := handler.NewDiscoveryHandler(app.discoveryService, app.logger)
-	discoveryHandler.RegisterRoutes(api)
-
-	// WebSocket routes
-	wsHandler := handler.NewWebSocketHandler(app.deviceService, app.operationService, app.logger)
-	wsHandler.RegisterRoutes(router.Group("/ws"))
-
-	// Swagger documentation
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
-
-	// Swagger redirect for convenience
-	router.GET("/docs", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, "/swagger/index.html")
-	})
-
-	app.logger.Info("Routes configured including Swagger documentation")
-}
-
-// Alternatif çözüm: Tek method ile daha temiz yapı
-func (app *Application) addRoutesAlternative(router *gin.Engine) {
-	// Health check routes
-	healthHandler := handler.NewHealthHandler(app.database, app.config, app.logger)
-	healthHandler.RegisterRoutes(router.Group(""))
-
-	// API v1 routes
-	apiV1 := router.Group("/api/v1")
-
-	// Device management routes
-	deviceHandler := handler.NewDeviceHandler(app.deviceService, app.logger)
-	devices := apiV1.Group("/devices")
-	{
-		// Device CRUD operations
-		devices.POST("", deviceHandler.RegisterDevice)
-		devices.GET("", deviceHandler.ListDevices)
-
-		// Individual device operations
-		device := devices.Group("/:device_id")
-		{
-			device.GET("", deviceHandler.GetDevice)
-			device.PUT("", deviceHandler.UpdateDevice)
-			device.DELETE("", deviceHandler.DeleteDevice)
-			device.POST("/connect", deviceHandler.ConnectDevice)
-			device.POST("/disconnect", deviceHandler.DisconnectDevice)
-			device.POST("/test", deviceHandler.TestDevice)
-			device.GET("/health", deviceHandler.GetDeviceHealth)
-			device.PUT("/config", deviceHandler.UpdateDeviceConfig)
-		}
-	}
-
-	// Operation management routes
-	operationHandler := handler.NewOperationHandler(app.operationService, app.logger)
-	operations := apiV1.Group("/operations")
-	{
-		operations.POST("", operationHandler.ExecuteOperation)
-		operations.GET("", operationHandler.ListOperations)
-		operations.GET("/:operation_id", operationHandler.GetOperation)
-		operations.PUT("/:operation_id/cancel", operationHandler.CancelOperation)
-	}
-
-	// Device-specific operation routes
-	deviceOps := apiV1.Group("/device-operations")
-	{
-		deviceOps.POST("/:device_id/execute", operationHandler.ExecuteDeviceOperation)
-		deviceOps.GET("/:device_id/list", operationHandler.ListDeviceOperations)
-		deviceOps.POST("/:device_id/print", operationHandler.PrintOperation)
-		deviceOps.POST("/:device_id/payment", operationHandler.PaymentOperation)
-		deviceOps.POST("/:device_id/scan", operationHandler.ScanOperation)
-		deviceOps.POST("/:device_id/open-drawer", operationHandler.OpenDrawerOperation)
-		deviceOps.POST("/:device_id/display", operationHandler.DisplayOperation)
-	}
-
-	// Discovery routes
-	discoveryHandler := handler.NewDiscoveryHandler(app.discoveryService, app.logger)
-	discovery := apiV1.Group("/discovery")
-	{
-		discovery.GET("/scan", discoveryHandler.ScanDevices)
-		discovery.POST("/auto-setup", discoveryHandler.AutoSetupDevices)
-		discovery.GET("/supported", discoveryHandler.GetSupportedDevices)
-		discovery.GET("/capabilities/:brand/:type", discoveryHandler.GetCapabilities)
-	}
-
-	// WebSocket routes
-	wsHandler := handler.NewWebSocketHandler(app.deviceService, app.operationService, app.logger)
-	ws := router.Group("/ws")
-	{
-		ws.GET("/devices/:device_id", wsHandler.HandleDeviceConnection)
-		ws.GET("/events", wsHandler.HandleEventConnection)
-		ws.GET("/operations", wsHandler.HandleOperationConnection)
-		ws.GET("/branches/:branch_id", wsHandler.HandleBranchConnection)
-	}
-
-	// Documentation routes
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
-	router.GET("/docs", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, "/swagger/index.html")
-	})
-
-	app.logger.Info("Routes configured successfully")
 }
 
 // startBackgroundServices starts background services

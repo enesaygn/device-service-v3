@@ -25,17 +25,6 @@ func NewDiscoveryHandler(discoveryService *service.DiscoveryService, logger *zap
 	}
 }
 
-// RegisterRoutes registers discovery-related routes
-func (h *DiscoveryHandler) RegisterRoutes(router *gin.RouterGroup) {
-	discovery := router.Group("/discovery")
-	{
-		discovery.GET("/scan", h.ScanDevices)
-		discovery.POST("/auto-setup", h.AutoSetupDevices)
-		discovery.GET("/supported", h.GetSupportedDevices)
-		discovery.GET("/capabilities/:brand/:type", h.GetCapabilities)
-	}
-}
-
 // ScanDevices scans for available devices
 // @Summary Scan for devices
 // @Description Scan for available devices on serial, USB, TCP, or Bluetooth connections

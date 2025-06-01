@@ -1,4 +1,4 @@
-// 📁 internal/discovery/usb/scanner.go - Complete USB Scanner Implementation
+// 📁 internal/discovery/usb/scanner.go - Fixed USB Scanner Implementation
 package usb
 
 import (
@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 
@@ -387,14 +386,9 @@ func (s *Scanner) identifyGenericDevice(desc *gousb.DeviceDesc, device *gousb.De
 		return nil
 	}
 
-	manufacturer, err := device.Manufacturer()
-	if err != nil {
-		panic(err)
-	}
-	product, err := device.Product()
-	if err != nil {
-		panic(err)
-	}
+	// ✅ FIXED: Proper error handling for manufacturer/product strings
+	manufacturer := s.getStringDescriptorSafe(device, "manufacturer")
+	product := s.getStringDescriptorSafe(device, "product")
 
 	return &discovery.DiscoveredDevice{
 		ConnectionType: model.ConnectionTypeUSB,
@@ -407,6 +401,38 @@ func (s *Scanner) identifyGenericDevice(desc *gousb.DeviceDesc, device *gousb.De
 		SerialNumber:   s.getSerialNumber(device),
 		Location:       s.createLocationString(desc),
 	}
+}
+
+// ✅ FIXED: Safe string descriptor getter
+func (s *Scanner) getStringDescriptorSafe(device *gousb.Device, descriptorType string) string {
+	defer func() {
+		if r := recover(); r != nil {
+			s.logger.Debug("Recovered from panic while getting string descriptor",
+				zap.String("descriptor_type", descriptorType),
+				zap.Any("panic", r),
+			)
+		}
+	}()
+
+	switch descriptorType {
+	case "manufacturer":
+		if manufacturer, err := device.Manufacturer(); err == nil {
+			return strings.TrimSpace(manufacturer)
+		}
+	case "product":
+		if product, err := device.Product(); err == nil {
+			return strings.TrimSpace(product)
+		}
+	case "serial":
+		if serial, err := device.SerialNumber(); err == nil {
+			return strings.TrimSpace(serial)
+		}
+	}
+
+	s.logger.Debug("Failed to get string descriptor",
+		zap.String("descriptor_type", descriptorType),
+	)
+	return ""
 }
 
 // createUSBConnectionInfo creates connection configuration for USB device
@@ -423,48 +449,26 @@ func (s *Scanner) createUSBConnectionInfo(desc *gousb.DeviceDesc) map[string]int
 		"protocol":       desc.Protocol,
 		"interface":      0,    // Default interface
 		"timeout":        5000, // 5 second timeout in ms
-		//"max_packet_size": desc.MaxPacketSize0,
 	}
 }
 
-// getSerialNumber attempts to retrieve device serial number
+// ✅ FIXED: Safe serial number getter with proper error handling
 func (s *Scanner) getSerialNumber(device *gousb.Device) string {
-	// Try to get actual serial number from device
-	serialNumber, err := device.SerialNumber()
-	serialNumberInt, err := strconv.Atoi(serialNumber)
-	if err != nil {
-		panic(err)
-	}
-	if err != nil {
-		panic(err)
-	}
-	if serialNumber != "0" {
-		if serial := s.getStringDescriptor(device, serialNumberInt); serial != "" {
-			return serial
+	// Try to get actual serial number from device safely
+	if serialNumber := s.getStringDescriptorSafe(device, "serial"); serialNumber != "" {
+		// Check if it's a valid serial number (not "0" or empty)
+		if serialNumber != "0" && strings.TrimSpace(serialNumber) != "" {
+			return strings.TrimSpace(serialNumber)
 		}
 	}
 
-	// Fallback to synthetic serial number
-	return fmt.Sprintf("USB-%04X%04X-%d", device.Desc.Vendor, device.Desc.Product, device.Desc.Address)
-}
-
-// getStringDescriptor safely retrieves a string descriptor from device
-func (s *Scanner) getStringDescriptor(device *gousb.Device, index int) string {
-	if index == 0 {
-		return ""
+	// Fallback to synthetic serial number using device information
+	if desc := device.Desc; desc != nil {
+		return fmt.Sprintf("USB-%04X%04X-%d-%d", desc.Vendor, desc.Product, desc.Bus, desc.Address)
 	}
 
-	// Try to get string descriptor with error handling
-	str, err := device.GetStringDescriptor(index)
-	if err != nil {
-		s.logger.Debug("Failed to get string descriptor",
-			zap.Int("index", index),
-			zap.Error(err),
-		)
-		return ""
-	}
-
-	return strings.TrimSpace(str)
+	// Ultimate fallback
+	return fmt.Sprintf("USB-UNKNOWN-%d", time.Now().Unix())
 }
 
 // createGenericModelName creates a model name for generic devices

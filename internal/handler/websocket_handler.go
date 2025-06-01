@@ -57,21 +57,6 @@ func NewWebSocketHandler(
 	return handler
 }
 
-// RegisterRoutes registers WebSocket routes
-func (h *WebSocketHandler) RegisterRoutes(router *gin.RouterGroup) {
-	// Device-specific WebSocket connections
-	router.GET("/devices/:device_id", h.HandleDeviceConnection)
-
-	// General device events WebSocket
-	router.GET("/events", h.HandleEventConnection)
-
-	// Operation status WebSocket
-	router.GET("/operations", h.HandleOperationConnection)
-
-	// Branch-wide events
-	router.GET("/branches/:branch_id", h.HandleBranchConnection)
-}
-
 // HandleDeviceConnection handles device-specific WebSocket connections
 func (h *WebSocketHandler) HandleDeviceConnection(c *gin.Context) {
 	deviceID := c.Param("device_id")
