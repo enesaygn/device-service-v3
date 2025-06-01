@@ -233,12 +233,6 @@ func (s *Scanner) processDevicesConcurrently(ctx context.Context, devices []*gou
 		return []*discovery.DiscoveredDevice{}, nil
 	}
 
-	// Create worker pool for concurrent processing
-	type deviceResult struct {
-		device *discovery.DiscoveredDevice
-		error  error
-	}
-
 	maxWorkers := s.config.MaxConcurrent
 	if maxWorkers <= 0 {
 		maxWorkers = 5
