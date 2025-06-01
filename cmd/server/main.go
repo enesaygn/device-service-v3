@@ -260,6 +260,8 @@ func (app *Application) addMiddleware(router *gin.Engine) {
 
 // addRoutes adds all routes to the router
 // Updated addRoutes method in main.go
+// cmd/server/main.go - addRoutes method düzeltilmiş
+// cmd/server/main.go - addRoutes method tamamen düzeltilmiş
 func (app *Application) addRoutes(router *gin.Engine) {
 	// Health check routes (no authentication required)
 	healthHandler := handler.NewHealthHandler(app.database, app.config, app.logger)
@@ -272,9 +274,12 @@ func (app *Application) addRoutes(router *gin.Engine) {
 	deviceHandler := handler.NewDeviceHandler(app.deviceService, app.logger)
 	deviceHandler.RegisterRoutes(api)
 
-	// Operation routes
+	// Operation routes (genel operation routes)
 	operationHandler := handler.NewOperationHandler(app.operationService, app.logger)
 	operationHandler.RegisterRoutes(api)
+
+	// Device-specific operation routes (ayrı prefix ile)
+	operationHandler.RegisterDeviceRoutes(api)
 
 	// Discovery routes
 	discoveryHandler := handler.NewDiscoveryHandler(app.discoveryService, app.logger)
@@ -293,6 +298,88 @@ func (app *Application) addRoutes(router *gin.Engine) {
 	})
 
 	app.logger.Info("Routes configured including Swagger documentation")
+}
+
+// Alternatif çözüm: Tek method ile daha temiz yapı
+func (app *Application) addRoutesAlternative(router *gin.Engine) {
+	// Health check routes
+	healthHandler := handler.NewHealthHandler(app.database, app.config, app.logger)
+	healthHandler.RegisterRoutes(router.Group(""))
+
+	// API v1 routes
+	apiV1 := router.Group("/api/v1")
+
+	// Device management routes
+	deviceHandler := handler.NewDeviceHandler(app.deviceService, app.logger)
+	devices := apiV1.Group("/devices")
+	{
+		// Device CRUD operations
+		devices.POST("", deviceHandler.RegisterDevice)
+		devices.GET("", deviceHandler.ListDevices)
+
+		// Individual device operations
+		device := devices.Group("/:device_id")
+		{
+			device.GET("", deviceHandler.GetDevice)
+			device.PUT("", deviceHandler.UpdateDevice)
+			device.DELETE("", deviceHandler.DeleteDevice)
+			device.POST("/connect", deviceHandler.ConnectDevice)
+			device.POST("/disconnect", deviceHandler.DisconnectDevice)
+			device.POST("/test", deviceHandler.TestDevice)
+			device.GET("/health", deviceHandler.GetDeviceHealth)
+			device.PUT("/config", deviceHandler.UpdateDeviceConfig)
+		}
+	}
+
+	// Operation management routes
+	operationHandler := handler.NewOperationHandler(app.operationService, app.logger)
+	operations := apiV1.Group("/operations")
+	{
+		operations.POST("", operationHandler.ExecuteOperation)
+		operations.GET("", operationHandler.ListOperations)
+		operations.GET("/:operation_id", operationHandler.GetOperation)
+		operations.PUT("/:operation_id/cancel", operationHandler.CancelOperation)
+	}
+
+	// Device-specific operation routes
+	deviceOps := apiV1.Group("/device-operations")
+	{
+		deviceOps.POST("/:device_id/execute", operationHandler.ExecuteDeviceOperation)
+		deviceOps.GET("/:device_id/list", operationHandler.ListDeviceOperations)
+		deviceOps.POST("/:device_id/print", operationHandler.PrintOperation)
+		deviceOps.POST("/:device_id/payment", operationHandler.PaymentOperation)
+		deviceOps.POST("/:device_id/scan", operationHandler.ScanOperation)
+		deviceOps.POST("/:device_id/open-drawer", operationHandler.OpenDrawerOperation)
+		deviceOps.POST("/:device_id/display", operationHandler.DisplayOperation)
+	}
+
+	// Discovery routes
+	discoveryHandler := handler.NewDiscoveryHandler(app.discoveryService, app.logger)
+	discovery := apiV1.Group("/discovery")
+	{
+		discovery.GET("/scan", discoveryHandler.ScanDevices)
+		discovery.POST("/auto-setup", discoveryHandler.AutoSetupDevices)
+		discovery.GET("/supported", discoveryHandler.GetSupportedDevices)
+		discovery.GET("/capabilities/:brand/:type", discoveryHandler.GetCapabilities)
+	}
+
+	// WebSocket routes
+	wsHandler := handler.NewWebSocketHandler(app.deviceService, app.operationService, app.logger)
+	ws := router.Group("/ws")
+	{
+		ws.GET("/devices/:device_id", wsHandler.HandleDeviceConnection)
+		ws.GET("/events", wsHandler.HandleEventConnection)
+		ws.GET("/operations", wsHandler.HandleOperationConnection)
+		ws.GET("/branches/:branch_id", wsHandler.HandleBranchConnection)
+	}
+
+	// Documentation routes
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+	router.GET("/docs", func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, "/swagger/index.html")
+	})
+
+	app.logger.Info("Routes configured successfully")
 }
 
 // startBackgroundServices starts background services

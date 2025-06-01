@@ -31,6 +31,7 @@ func NewOperationHandler(operationService *service.OperationService, logger *zap
 
 // RegisterRoutes registers operation-related routes
 func (h *OperationHandler) RegisterRoutes(router *gin.RouterGroup) {
+	// Genel operation routes
 	operations := router.Group("/operations")
 	{
 		operations.POST("", h.ExecuteOperation)
@@ -38,17 +39,20 @@ func (h *OperationHandler) RegisterRoutes(router *gin.RouterGroup) {
 		operations.GET("/:id", h.GetOperation)
 		operations.PUT("/:id/cancel", h.CancelOperation)
 	}
+}
 
-	// Device-specific operation routes
-	devices := router.Group("/devices/:device_id")
+// Device-specific operation routes için ayrı method
+func (h *OperationHandler) RegisterDeviceRoutes(router *gin.RouterGroup) {
+	// Device-specific operation routes - /device-ops prefix kullanarak çakışmayı önlüyoruz
+	deviceOps := router.Group("/device-ops/:device_id")
 	{
-		devices.POST("/operations", h.ExecuteDeviceOperation)
-		devices.GET("/operations", h.ListDeviceOperations)
-		devices.POST("/print", h.PrintOperation)
-		devices.POST("/payment", h.PaymentOperation)
-		devices.POST("/scan", h.ScanOperation)
-		devices.POST("/open-drawer", h.OpenDrawerOperation)
-		devices.POST("/display", h.DisplayOperation)
+		deviceOps.POST("/operations", h.ExecuteDeviceOperation)
+		deviceOps.GET("/operations", h.ListDeviceOperations)
+		deviceOps.POST("/print", h.PrintOperation)
+		deviceOps.POST("/payment", h.PaymentOperation)
+		deviceOps.POST("/scan", h.ScanOperation)
+		deviceOps.POST("/open-drawer", h.OpenDrawerOperation)
+		deviceOps.POST("/display", h.DisplayOperation)
 	}
 }
 

@@ -8,6 +8,9 @@ import (
 	"go.uber.org/zap"
 
 	"device-service/internal/config"
+	"device-service/internal/discovery"
+	"device-service/internal/discovery/tcp"
+	"device-service/internal/discovery/usb"
 	"device-service/internal/driver"
 	"device-service/internal/model"
 	"device-service/internal/repository"
@@ -15,10 +18,11 @@ import (
 	"device-service/pkg/devicetypes"
 )
 
-// DiscoveryService handles device discovery operations
+// DiscoveryService handles device discovery operations - Now much cleaner!
 type DiscoveryService struct {
 	deviceRepo     repository.DeviceRepository
 	driverRegistry *driver.Registry
+	scannerManager *discovery.ScannerManager
 	config         *config.Config
 	logger         *utils.ServiceLogger
 }
@@ -30,44 +34,95 @@ func NewDiscoveryService(
 	config *config.Config,
 	logger *zap.Logger,
 ) *DiscoveryService {
-	return &DiscoveryService{
+	serviceLogger := utils.NewServiceLogger(logger, "discovery-service")
+
+	// Create scanner manager
+	scannerManager := discovery.NewScannerManager(logger)
+
+	// Register available scanners
+	ds := &DiscoveryService{
 		deviceRepo:     deviceRepo,
 		driverRegistry: driverRegistry,
+		scannerManager: scannerManager,
 		config:         config,
-		logger:         utils.NewServiceLogger(logger, "discovery-service"),
+		logger:         serviceLogger,
 	}
+
+	// Initialize scanners
+	ds.initializeScanners()
+
+	return ds
 }
 
-// ScanDevices scans for available devices
+// initializeScanners registers all available scanners
+func (ds *DiscoveryService) initializeScanners() {
+	// Register USB scanner
+	if usbScanner := usb.NewScanner(ds.logger.Logger, nil); usbScanner.IsAvailable() {
+		ds.scannerManager.RegisterScanner(usbScanner)
+	}
+
+	//TODO: Register Serial scanner
+	// if serialScanner := serial.NewScanner(ds.logger.Logger, nil); serialScanner.IsAvailable() {
+	// 	ds.scannerManager.RegisterScanner(serialScanner)
+	// }
+
+	// Register TCP scanner
+	if tcpScanner := tcp.NewScanner(ds.logger.Logger, nil); tcpScanner.IsAvailable() {
+		ds.scannerManager.RegisterScanner(tcpScanner)
+	}
+
+	ds.logger.Info("Discovery scanners initialized",
+		zap.Strings("available_scanners", ds.scannerManager.GetAvailableScanners()),
+	)
+}
+
+// ScanDevices scans for available devices - Much simpler now!
 func (ds *DiscoveryService) ScanDevices(ctx context.Context, req *ScanRequest) ([]*DiscoveredDevice, error) {
 	ds.logger.Info("Starting device scan", zap.String("type", req.ScanType))
 
-	var devices []*DiscoveredDevice
+	var devices []*discovery.DiscoveredDevice
+	var err error
 
-	// Doğru
 	switch req.ScanType {
 	case "all":
-		// Tüm tipları tara
-		serialDevices, _ := ds.scanSerialDevices(ctx)
-		usbDevices, _ := ds.scanUSBDevices(ctx)
-		tcpDevices, _ := ds.scanTCPDevices(ctx)
-		devices = append(devices, serialDevices...)
-		devices = append(devices, usbDevices...)
-		devices = append(devices, tcpDevices...)
-	case "serial":
-		devices, _ = ds.scanSerialDevices(ctx)
-	case "usb":
-		devices, _ = ds.scanUSBDevices(ctx)
-	case "tcp":
-		devices, _ = ds.scanTCPDevices(ctx)
+		devices, err = ds.scannerManager.ScanAll(ctx)
+	case "serial", "usb", "tcp":
+		devices, err = ds.scannerManager.ScanByType(ctx, req.ScanType)
+	default:
+		return nil, fmt.Errorf("unsupported scan type: %s", req.ScanType)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("scan failed: %w", err)
+	}
+
+	// Convert to service DTOs
+	result := make([]*DiscoveredDevice, len(devices))
+	for i, device := range devices {
+		result[i] = ds.convertToServiceDTO(device)
 	}
 
 	ds.logger.Info("Device scan completed",
-		zap.Int("devices_found", len(devices)),
+		zap.Int("devices_found", len(result)),
 		zap.String("scan_type", req.ScanType),
 	)
 
-	return devices, nil
+	return result, nil
+}
+
+// convertToServiceDTO converts discovery device to service DTO
+func (ds *DiscoveryService) convertToServiceDTO(device *discovery.DiscoveredDevice) *DiscoveredDevice {
+	return &DiscoveredDevice{
+		ConnectionType: device.ConnectionType,
+		ConnectionInfo: device.ConnectionInfo,
+		Brand:          device.Brand,
+		Model:          device.Model,
+		DeviceType:     device.DeviceType,
+		Capabilities:   device.Capabilities,
+		Confidence:     device.Confidence,
+		SerialNumber:   device.SerialNumber,
+		Location:       device.Location,
+	}
 }
 
 // scanSerialDevices scans for serial port devices

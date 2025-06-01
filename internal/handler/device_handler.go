@@ -33,16 +33,22 @@ func NewDeviceHandler(deviceService *service.DeviceService, logger *zap.Logger) 
 func (h *DeviceHandler) RegisterRoutes(router *gin.RouterGroup) {
 	devices := router.Group("/devices")
 	{
+		// Genel device routes
 		devices.POST("", h.RegisterDevice)
 		devices.GET("", h.ListDevices)
-		devices.GET("/:id", h.GetDevice)
-		devices.PUT("/:id", h.UpdateDevice)
-		devices.DELETE("/:id", h.DeleteDevice)
-		devices.POST("/:id/connect", h.ConnectDevice)
-		devices.POST("/:id/disconnect", h.DisconnectDevice)
-		devices.POST("/:id/test", h.TestDevice)
-		devices.GET("/:id/health", h.GetDeviceHealth)
-		devices.PUT("/:id/config", h.UpdateDeviceConfig)
+
+		// Spesifik device routes - :id parametresi
+		deviceRoutes := devices.Group("/:id")
+		{
+			deviceRoutes.GET("", h.GetDevice)
+			deviceRoutes.PUT("", h.UpdateDevice)
+			deviceRoutes.DELETE("", h.DeleteDevice)
+			deviceRoutes.POST("/connect", h.ConnectDevice)
+			deviceRoutes.POST("/disconnect", h.DisconnectDevice)
+			deviceRoutes.POST("/test", h.TestDevice)
+			deviceRoutes.GET("/health", h.GetDeviceHealth)
+			deviceRoutes.PUT("/config", h.UpdateDeviceConfig)
+		}
 	}
 }
 
