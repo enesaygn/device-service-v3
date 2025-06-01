@@ -14,6 +14,8 @@ func RegisterDefaultDrivers(registry *Registry, logger *zap.Logger) {
 	// Register EPSON printer drivers
 	registerEPSONDrivers(registry, logger)
 
+	registerKODPOSDrivers(registry, logger) // ← Bu satırı ekle
+
 	// Register other brand drivers here
 	// registerSTARDrivers(registry, logger)
 	// registerINGENICODrivers(registry, logger)
@@ -72,5 +74,27 @@ func registerEPSONDrivers(registry *Registry, logger *zap.Logger) {
 
 	logger.Info("EPSON printer drivers registered",
 		zap.Int("models", 6),
+	)
+}
+
+func registerKODPOSDrivers(registry *Registry, logger *zap.Logger) {
+	// KODPOS POS80 Series
+	registry.Register(
+		model.BrandKodpos,
+		model.DeviceTypePrinter,
+		"POS80 Series",
+		epson.NewEPSONDriver, // EPSON driver'ını kullanıyoruz (ESC/POS uyumlu)
+	)
+
+	// Generic KODPOS printer (wildcard)
+	registry.Register(
+		model.BrandKodpos,
+		model.DeviceTypePrinter,
+		"*",
+		epson.NewEPSONDriver,
+	)
+
+	logger.Info("KODPOS printer drivers registered",
+		zap.Int("models", 2),
 	)
 }

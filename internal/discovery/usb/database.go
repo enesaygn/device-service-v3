@@ -156,6 +156,23 @@ func (db *DeviceDatabase) initializeDatabase() {
 	}
 
 	db.vendors[0x1504] = bixolonVendor
+
+	// KODPOS vendor (0x0416)
+	kodposVendor := &VendorInfo{
+		Brand:    model.BrandKodpos,
+		Name:     "KODPOS Technology",
+		products: make(map[gousb.ID]*ProductInfo),
+	}
+
+	// KODPOS POS80 Series
+	kodposVendor.products[0x5011] = &ProductInfo{
+		Model:        "POS80 Series",
+		DeviceType:   model.DeviceTypePrinter,
+		Capabilities: []string{"PRINT", "CUT", "STATUS", "DRAWER"},
+		Confidence:   0.90,
+	}
+
+	db.vendors[0x0416] = kodposVendor
 }
 
 // IsKnownVendor checks if a vendor ID is in the database

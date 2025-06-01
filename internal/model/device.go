@@ -54,6 +54,7 @@ const (
 	BrandBixolon  DeviceBrand = "BIXOLON"
 	BrandVerifone DeviceBrand = "VERIFONE"
 	BrandGeneric  DeviceBrand = "GENERIC"
+	BrandKodpos   DeviceBrand = "KODPOS"
 )
 
 // Capability represents what a device can do
