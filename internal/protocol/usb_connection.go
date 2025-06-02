@@ -3,6 +3,7 @@ package protocol
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"strconv"
 	"sync"
@@ -267,12 +268,27 @@ func (uc *USBConnection) parseHexID(hexStr string) (gousb.ID, error) {
 		hexStr = hexStr[2:]
 	}
 
+	// İlk olarak normal hex sayısı gibi parse etmeye çalış
 	id, err := strconv.ParseUint(hexStr, 16, 16)
-	if err != nil {
-		return 0, err
+	if err == nil {
+		return gousb.ID(id), nil
 	}
 
-	return gousb.ID(id), nil
+	// Olmadıysa (örneğin 30343136 gibi büyük sayı geldiyse), ASCII olarak dene
+	asciiBytes, err := hex.DecodeString(hexStr)
+	if err != nil {
+		return 0, fmt.Errorf("invalid hex or ascii encoding: %v", err)
+	}
+
+	asciiStr := string(asciiBytes) // örnek: "0416"
+
+	// ✅ FIXED: 16 base kullan, 10 değil!
+	numID, err := strconv.ParseUint(asciiStr, 16, 16) // 16 base!
+	if err != nil {
+		return 0, fmt.Errorf("ascii string to hex number failed: %v", err)
+	}
+
+	return gousb.ID(numID), nil
 }
 
 // findAndOpenDevice finds and opens the USB device

@@ -12,7 +12,7 @@ import (
 )
 
 // DriverFactory creates device drivers - ✅ Return type düzeltildi
-type DriverFactory func(config interface{}, logger *zap.Logger) (driver.DeviceDriver, error)
+type DriverFactory func(device *model.Device, connectionConfig interface{}, logger *zap.Logger) (driver.DeviceDriver, error)
 
 // Registry manages device driver registration and creation
 type Registry struct {
@@ -56,7 +56,7 @@ func (r *Registry) Register(brand model.DeviceBrand, deviceType model.DeviceType
 }
 
 // CreateDriver creates a driver instance
-func (r *Registry) CreateDriver(device *model.Device, config interface{}) (driver.DeviceDriver, error) {
+func (r *Registry) CreateDriver(device *model.Device, connectionConfig interface{}) (driver.DeviceDriver, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -68,19 +68,20 @@ func (r *Registry) CreateDriver(device *model.Device, config interface{}) (drive
 	}
 
 	if factory, exists := r.drivers[key]; exists {
-		return factory(config, r.logger)
+		// ✅ FIXED: Pass both device and connectionConfig
+		return factory(device, connectionConfig, r.logger)
 	}
 
 	// Try brand + device type match (any model)
 	key.Model = "*"
 	if factory, exists := r.drivers[key]; exists {
-		return factory(config, r.logger)
+		return factory(device, connectionConfig, r.logger)
 	}
 
 	// Try generic driver
 	key.Brand = model.BrandGeneric
 	if factory, exists := r.drivers[key]; exists {
-		return factory(config, r.logger)
+		return factory(device, connectionConfig, r.logger)
 	}
 
 	return nil, fmt.Errorf("no driver found for brand=%s, type=%s, model=%s",

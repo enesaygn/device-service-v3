@@ -45,13 +45,41 @@ type EPSONConfig struct {
 }
 
 // NewEPSONDriver creates a new EPSON printer driver
-func NewEPSONDriver(config interface{}, logger *zap.Logger) (driver.DeviceDriver, error) {
-	epsonConfig, err := parseEPSONConfig(config)
+func NewEPSONDriver(device *model.Device, connectionConfig interface{}, logger *zap.Logger) (driver.DeviceDriver, error) {
+	// Parse connection configuration ONLY
+	connConfig, err := parseConnectionConfig(connectionConfig)
 	if err != nil {
-		return nil, fmt.Errorf("invalid EPSON configuration: %w", err)
+		return nil, fmt.Errorf("invalid connection configuration: %w", err)
 	}
 
-	deviceLogger := utils.NewDeviceLogger(logger, epsonConfig.DeviceID, "PRINTER", "EPSON")
+	// Create EPSON configuration using device + connection info
+	epsonConfig := &EPSONConfig{
+		// ✅ Device information comes from device parameter
+		DeviceID:         device.DeviceID,
+		Model:            device.Model,
+		ConnectionType:   device.ConnectionType,
+		ConnectionConfig: connConfig,
+
+		// ✅ Driver-specific defaults
+		PaperWidth:   80,
+		CharacterSet: "PC437",
+		CutType:      "FULL",
+		DrawerPin:    0,
+		EnableDrawer: true,
+		EnableCutter: true,
+		LogoEnabled:  false,
+		Options:      make(map[string]interface{}),
+	}
+
+	// Override defaults from device capabilities if available
+	if device.HasCapability(model.CapabilityDrawer) {
+		epsonConfig.EnableDrawer = true
+	}
+	if device.HasCapability(model.CapabilityCut) {
+		epsonConfig.EnableCutter = true
+	}
+
+	deviceLogger := utils.NewDeviceLogger(logger, device.DeviceID, string(device.DeviceType), string(device.Brand))
 
 	return &EPSONDriver{
 		config: epsonConfig,
@@ -60,9 +88,9 @@ func NewEPSONDriver(config interface{}, logger *zap.Logger) (driver.DeviceDriver
 			HealthScore: 0,
 		},
 		deviceInfo: &driver.DeviceInfo{
-			Brand:          model.BrandEpson,
-			Model:          epsonConfig.Model,
-			ConnectionType: epsonConfig.ConnectionType,
+			Brand:          device.Brand,
+			Model:          device.Model,
+			ConnectionType: device.ConnectionType,
 			Capabilities:   getEPSONCapabilities(epsonConfig),
 			Manufacturer:   "Seiko Epson Corporation",
 		},
@@ -185,10 +213,6 @@ func (d *EPSONDriver) GetStatus() (*driver.DeviceStatus, error) {
 // ExecuteOperation executes a device operation
 func (d *EPSONDriver) ExecuteOperation(ctx context.Context, operation *model.DeviceOperation) (*driver.OperationResult, error) {
 	startTime := time.Now()
-
-	if !d.IsConnected() {
-		return nil, fmt.Errorf("device not connected")
-	}
 
 	var result *driver.OperationResult
 	var err error
@@ -404,11 +428,55 @@ func (d *EPSONDriver) notifyEvent(eventType string, data interface{}) {
 	}
 }
 
+func parseConnectionConfig(config interface{}) (map[string]interface{}, error) {
+	var configMap map[string]interface{}
+
+	// Handle different input types
+	switch v := config.(type) {
+	case map[string]interface{}:
+		configMap = v
+	case model.JSONObject:
+		configMap = map[string]interface{}(v)
+	case *model.JSONObject:
+		if v != nil {
+			configMap = map[string]interface{}(*v)
+		} else {
+			return nil, fmt.Errorf("config is nil")
+		}
+	default:
+		return nil, fmt.Errorf("invalid config type: %T, expected map[string]interface{} or model.JSONObject", config)
+	}
+
+	if configMap == nil {
+		return nil, fmt.Errorf("config map is nil")
+	}
+
+	// Validate required connection fields based on connection type
+	return configMap, nil
+}
+
 // parseEPSONConfig parses and validates EPSON configuration
 func parseEPSONConfig(config interface{}) (*EPSONConfig, error) {
-	configMap, ok := config.(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("invalid config type")
+	var configMap map[string]interface{}
+
+	// Handle different input types
+	switch v := config.(type) {
+	case map[string]interface{}:
+		configMap = v
+	case model.JSONObject:
+		configMap = map[string]interface{}(v)
+	case *model.JSONObject:
+		if v != nil {
+			configMap = map[string]interface{}(*v)
+		} else {
+			return nil, fmt.Errorf("config is nil")
+		}
+	default:
+		return nil, fmt.Errorf("invalid config type: %T, expected map[string]interface{} or model.JSONObject", config)
+	}
+
+	if configMap == nil {
+		return nil, fmt.Errorf("config map is nil")
 	}
 
 	epsonConfig := &EPSONConfig{

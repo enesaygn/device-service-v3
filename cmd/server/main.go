@@ -235,7 +235,7 @@ func (app *Application) initializeServer() error {
 // startBackgroundServices starts background services
 func (app *Application) startBackgroundServices() {
 	// Start device health monitoring
-	go app.startDeviceHealthMonitoring()
+	//go app.startDeviceHealthMonitoring()
 
 	// Start offline operation sync
 	go app.startOfflineSync()

@@ -341,11 +341,32 @@ func (ds *DiscoveryService) shouldSetupDevice(device *DiscoveredDevice, filter m
 }
 
 // registerDeviceWithService registers device using DeviceService
+// registerDeviceWithService registers device using proper service layer
 func (ds *DiscoveryService) registerDeviceWithService(ctx context.Context, req *RegisterDeviceRequest) (*model.Device, error) {
-	// Create a temporary DeviceService instance or use dependency injection
-	// For now, we'll create the device directly in repository
-	// In a real implementation, you'd inject DeviceService as a dependency
+	ds.logger.Info("Registering device through discovery service",
+		zap.String("device_id", req.DeviceID),
+		zap.String("brand", string(req.Brand)),
+		zap.String("model", req.Model),
+		zap.String("device_type", string(req.DeviceType)),
+	)
 
+	// Validate request
+	if err := ds.validateRegisterRequest(req); err != nil {
+		return nil, fmt.Errorf("validation failed: %w", err)
+	}
+
+	// Check if device already exists
+	existing, err := ds.deviceRepo.GetByDeviceID(ctx, req.DeviceID)
+	if err == nil && existing != nil {
+		return nil, fmt.Errorf("device with ID %s already exists", req.DeviceID)
+	}
+
+	// Verify driver support
+	if !ds.driverRegistry.IsSupported(req.Brand, req.DeviceType, req.Model) {
+		return nil, fmt.Errorf("unsupported device: %s %s %s", req.Brand, req.DeviceType, req.Model)
+	}
+
+	// Create device model
 	device := &model.Device{
 		ID:               uuid.New(),
 		DeviceID:         req.DeviceID,
@@ -359,54 +380,251 @@ func (ds *DiscoveryService) registerDeviceWithService(ctx context.Context, req *
 		BranchID:         req.BranchID,
 		Location:         req.Location,
 		Status:           model.DeviceStatusOffline,
-		CreatedAt:        time.Now(),
-		UpdatedAt:        time.Now(),
-	}
-
-	// Validate device is supported
-	if !ds.driverRegistry.IsSupported(req.Brand, req.DeviceType, req.Model) {
-		return nil, fmt.Errorf("unsupported device: %s %s %s", req.Brand, req.DeviceType, req.Model)
+		ErrorInfo:        model.JSONObject{},
+		PerformanceMetrics: model.JSONObject{
+			"total_operations": 0,
+			"success_rate":     0.0,
+			"error_count":      0,
+		},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	// Save to database
 	if err := ds.deviceRepo.Create(ctx, device); err != nil {
+		ds.logger.Error("Failed to create device in discovery service",
+			zap.Error(err),
+			zap.String("device_id", req.DeviceID),
+		)
 		return nil, fmt.Errorf("failed to create device: %w", err)
 	}
+
+	// Log successful registration
+	ds.logger.Info("Device registered successfully through discovery service",
+		zap.String("device_id", device.DeviceID),
+		zap.String("device_type", string(device.DeviceType)),
+		zap.String("brand", string(device.Brand)),
+		zap.String("model", device.Model),
+		zap.String("connection_type", string(device.ConnectionType)),
+		zap.String("user_id", req.UserID),
+	)
 
 	return device, nil
 }
 
-// autoConnectDevice attempts to connect to the device after registration
+// validateRegisterRequest validates device registration request
+func (ds *DiscoveryService) validateRegisterRequest(req *RegisterDeviceRequest) error {
+	if req.DeviceID == "" {
+		return fmt.Errorf("device_id is required")
+	}
+	if req.DeviceType == "" {
+		return fmt.Errorf("device_type is required")
+	}
+	if req.Brand == "" {
+		return fmt.Errorf("brand is required")
+	}
+	if req.Model == "" {
+		return fmt.Errorf("model is required")
+	}
+	if req.ConnectionType == "" {
+		return fmt.Errorf("connection_type is required")
+	}
+	if req.BranchID == uuid.Nil {
+		return fmt.Errorf("branch_id is required")
+	}
+	if req.ConnectionConfig == nil {
+		return fmt.Errorf("connection_config is required")
+	}
+	if req.UserID == "" {
+		req.UserID = "auto-setup" // Default for discovery service
+	}
+
+	// Validate device type
+	validTypes := []model.DeviceType{
+		model.DeviceTypePOS,
+		model.DeviceTypePrinter,
+		model.DeviceTypeScanner,
+		model.DeviceTypeCashRegister,
+		model.DeviceTypeCashDrawer,
+		model.DeviceTypeDisplay,
+	}
+	isValidType := false
+	for _, validType := range validTypes {
+		if req.DeviceType == validType {
+			isValidType = true
+			break
+		}
+	}
+	if !isValidType {
+		return fmt.Errorf("invalid device_type: %s", req.DeviceType)
+	}
+
+	// Validate brand
+	validBrands := []model.DeviceBrand{
+		model.BrandEpson,
+		model.BrandStar,
+		model.BrandIngenico,
+		model.BrandPAX,
+		model.BrandCitizen,
+		model.BrandBixolon,
+		model.BrandVerifone,
+		model.BrandGeneric,
+		model.BrandKodpos,
+	}
+	isValidBrand := false
+	for _, validBrand := range validBrands {
+		if req.Brand == validBrand {
+			isValidBrand = true
+			break
+		}
+	}
+	if !isValidBrand {
+		return fmt.Errorf("invalid brand: %s", req.Brand)
+	}
+
+	// Validate connection type
+	validConnTypes := []model.ConnectionType{
+		model.ConnectionTypeSerial,
+		model.ConnectionTypeUSB,
+		model.ConnectionTypeTCP,
+		model.ConnectionTypeBluetooth,
+	}
+	isValidConnType := false
+	for _, validConnType := range validConnTypes {
+		if req.ConnectionType == validConnType {
+			isValidConnType = true
+			break
+		}
+	}
+	if !isValidConnType {
+		return fmt.Errorf("invalid connection_type: %s", req.ConnectionType)
+	}
+
+	return nil
+}
+
+// createDeviceFromDiscovered creates a RegisterDeviceRequest from discovered device
+func (ds *DiscoveryService) createDeviceFromDiscovered(device *DiscoveredDevice, branchID uuid.UUID, index int) *RegisterDeviceRequest {
+	// Generate unique device ID
+	deviceID := fmt.Sprintf("AUTO_%s_%s_%d",
+		string(device.Brand),
+		string(device.DeviceType),
+		index+1)
+
+	// Set firmware version if serial number is available
+	var firmwareVersion *string
+	if device.SerialNumber != "" {
+		firmwareVersion = &device.SerialNumber
+	}
+
+	// Set location if available
+	var location *string
+	if device.Location != "" {
+		location = &device.Location
+	}
+
+	return &RegisterDeviceRequest{
+		DeviceID:         deviceID,
+		DeviceType:       device.DeviceType,
+		Brand:            device.Brand,
+		Model:            device.Model,
+		FirmwareVersion:  firmwareVersion,
+		ConnectionType:   device.ConnectionType,
+		ConnectionConfig: device.ConnectionInfo,
+		BranchID:         branchID,
+		Location:         location,
+		UserID:           "auto-setup",
+	}
+}
+
+// Enhanced autoConnectDevice with better error handling and logging
 func (ds *DiscoveryService) autoConnectDevice(ctx context.Context, deviceID string) error {
+	ds.logger.Info("Attempting auto-connect for device", zap.String("device_id", deviceID))
+
 	// Get device from database
 	device, err := ds.deviceRepo.GetByDeviceID(ctx, deviceID)
 	if err != nil {
 		return fmt.Errorf("device not found: %w", err)
 	}
 
+	// Create device logger for better tracking
+	deviceLogger := utils.NewDeviceLogger(ds.logger.Logger, device.DeviceID, string(device.DeviceType), string(device.Brand))
+
+	// Validate connection configuration
+	if len(device.ConnectionConfig) == 0 {
+		return fmt.Errorf("device has no connection configuration")
+	}
+
 	// Create driver instance
 	driverInstance, err := ds.driverRegistry.CreateDriver(device, device.ConnectionConfig)
 	if err != nil {
+		deviceLogger.LogConnection("create_driver", false, err)
 		return fmt.Errorf("failed to create driver: %w", err)
 	}
 
+	// Update status to connecting
+	device.Status = model.DeviceStatusConnecting
+	if err := ds.deviceRepo.UpdateStatus(ctx, device.ID, device.Status); err != nil {
+		deviceLogger.Error("Failed to update device status to connecting", zap.Error(err))
+	}
+
 	// Attempt connection with timeout
-	connectCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	connectCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 
+	startTime := time.Now()
 	if err := driverInstance.Connect(connectCtx); err != nil {
+		// Update device with error status
+		device.Status = model.DeviceStatusError
+		device.ErrorInfo = model.JSONObject{
+			"last_error":     err.Error(),
+			"error_time":     time.Now(),
+			"error_context":  "auto_connect",
+			"critical_error": true,
+		}
+
+		if updateErr := ds.deviceRepo.Update(ctx, device); updateErr != nil {
+			deviceLogger.Error("Failed to update device after connection error", zap.Error(updateErr))
+		}
+
+		deviceLogger.LogConnection("connect", false, err)
 		return fmt.Errorf("failed to connect to device: %w", err)
 	}
 
-	// Update device status
+	// Test basic functionality
+	if err := driverInstance.Ping(connectCtx); err != nil {
+		deviceLogger.Warn("Device connected but ping failed", zap.Error(err))
+		// Don't fail auto-connect for ping failure, just log it
+	}
+
+	// Update device status to online
 	device.Status = model.DeviceStatusOnline
 	device.LastPing = &[]time.Time{time.Now()}[0]
-	device.ErrorInfo = model.JSONObject{}
+	device.ErrorInfo = model.JSONObject{} // Clear any previous errors
+	device.PerformanceMetrics = model.JSONObject{
+		"last_connect_time":    time.Now(),
+		"connection_duration":  time.Since(startTime).Milliseconds(),
+		"auto_connect_success": true,
+	}
 
 	if err := ds.deviceRepo.Update(ctx, device); err != nil {
-		ds.logger.Error("Failed to update device after auto-connect", zap.Error(err))
+		deviceLogger.Error("Failed to update device after successful connection", zap.Error(err))
 		// Don't return error, connection was successful
 	}
+
+	deviceLogger.LogConnection("connect", true, nil)
+	ds.logger.Info("Device auto-connected successfully",
+		zap.String("device_id", deviceID),
+		zap.Duration("connection_time", time.Since(startTime)),
+	)
+
+	// Close the driver connection for now - it will be reopened when needed
+	go func() {
+		time.Sleep(1 * time.Second) // Give it a moment
+		if err := driverInstance.Disconnect(context.Background()); err != nil {
+			deviceLogger.Warn("Failed to disconnect after auto-connect test", zap.Error(err))
+		}
+	}()
 
 	return nil
 }
